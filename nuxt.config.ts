@@ -16,7 +16,7 @@ export default defineNuxtConfig({
     public: {
       // Can be overridden by NUXT_PUBLIC_HELLO_TEXT environment variable
       helloText: 'Hello from the Edge 👋',
-      baseUrl: '',
+      baseUrl: process.env.NUXT_PUBLIC_BASE_URL,
     },
   },
   // https://nuxt.com/docs/getting-started/upgrade#testing-nuxt-4
