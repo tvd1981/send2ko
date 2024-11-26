@@ -77,7 +77,7 @@ bot.on("message:document", async (ctx) => {
 
   try {
     const db = useDrizzle()
-    await db.insert(tables.files).values({
+    await db.insert(tables.tlgFiles).values({
       id: doc.file_id,
       userId: ctx.from.id,
       name: doc.file_name || 'unknown',

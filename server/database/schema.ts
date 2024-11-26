@@ -10,7 +10,7 @@ export const tlgUsers = sqliteTable('tlg_users', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 })
 
-export const files = sqliteTable('files', {
+export const tlgFiles = sqliteTable('files', {
   id: text('id').primaryKey(),
   userId: integer('user_id'),
   name: text('name'),

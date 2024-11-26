@@ -10,4 +10,4 @@ export function useDrizzle() {
 }
 
 export type tlgUsers = typeof schema.tlgUsers.$inferSelect
-export type tlgFiles = typeof schema.files.$inferSelect
+export type tlgFiles = typeof schema.tlgFiles.$inferSelect
