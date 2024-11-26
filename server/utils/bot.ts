@@ -4,7 +4,7 @@ import { User } from "grammy/types"
 import { hashids } from "./common"
 
 const config = useRuntimeConfig()
-const db = useDrizzle()
+
 export const bot = new Bot(config.telegramBotToken)
 
 async function handleUserResponse(userId: string) {
@@ -76,6 +76,7 @@ bot.on("message:document", async (ctx) => {
   }
 
   try {
+    const db = useDrizzle()
     await db.insert(tables.files).values({
       id: doc.file_id,
       userId: ctx.from.id,
