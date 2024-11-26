@@ -9,13 +9,26 @@ export const bot = new Bot(config.telegramBotToken)
 
 async function handleUserResponse(userId: string) {
   try {
+    const db = useDrizzle()
+    const user = await db.query.tlgUsers.findFirst({
+      where: eq(tables.tlgUsers.id, Number(userId))
+    })
+    const { id2 } = user || {}
+    const opdsUrl = `${config.baseUrl}/ebooks/opds/${id2}`
     const keyboard = new InlineKeyboard()
-      .text("Xem thông tin", "view_info")
+      .text("Xem file đã upload", "view_uploads")
       .row()
       .url("Liên hệ hỗ trợ", "https://t.me/your_support")
 
     return {
-      text: "Chào mừng! Vui lòng chọn chức năng:",
+      text: "Chào mừng! 📚\n\n" +
+            "Bot hỗ trợ các định dạng file:\n" +
+            "- PDF (.pdf)\n" +
+            "- EPUB (.epub)\n" +
+            "- MOBI (.mobi)\n\n" +
+            "Dung lượng tối đa: 20MB\n\n" +
+            `OPDS: ${opdsUrl}\n\n` +
+            "Vui lòng chọn chức năng:",
       keyboard
     }
   } catch (error) {
@@ -61,6 +74,8 @@ const SUPPORTED_MIMES = [
   'application/x-mobipocket-ebook'
 ];
 
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB in bytes
+
 bot.on("message:document", async (ctx) => {
   const doc = ctx.message.document;
   
@@ -72,6 +87,12 @@ bot.on("message:document", async (ctx) => {
       "- EPUB (.epub)\n" +
       "- MOBI (.mobi)"
     );
+    return;
+  }
+
+  // Kiểm tra dung lượng file
+  if (doc.file_size && doc.file_size > MAX_FILE_SIZE) {
+    await ctx.reply("❌ File quá dung lượng cho phép (tối đa 20MB)");
     return;
   }
 
