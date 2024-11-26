@@ -32,43 +32,39 @@ export default defineEventHandler(async (event) => {
       where: eq(tables.tlgFiles.userId, userId),
       orderBy: desc(tables.tlgFiles.createdAt)
     })
-
-    // Tạo OPDS feed
+    // Tạo OPDS 2.0 feed
     const feed = {
-      'feed': {
-        '@xmlns': 'http://www.w3.org/2005/Atom',
-        '@xmlns:dc': 'http://purl.org/dc/terms/',
-        '@xmlns:opds': 'http://opds-spec.org/2010/catalog',
-        
-        'id': `urn:uuid:${userId}`,
-        'title': 'My Ebook Collection',
-        'updated': new Date().toISOString(),
-        'author': {
-          'name': 'Your App Name'
+      metadata: {
+        title: 'My Ebook Collection',
+        modified: new Date().toISOString(),
+        identifier: `urn:uuid:${userId}`
+      },
+      publications: files.map(file => ({
+        metadata: {
+          identifier: `urn:uuid:${file.id}`,
+          title: file.name,
+          modified: file.createdAt.toISOString(),
+          published: file.createdAt.toISOString
         },
-        
-        'entry': files.map(file => ({
-          'id': `urn:uuid:${file.id}`,
-          'title': file.name,
-          'updated': file.createdAt.toISOString(),
-          'published': file.createdAt.toISOString(),
-          'link': [
-            {
-              '@rel': 'http://opds-spec.org/acquisition/open-access',
-              '@href': `/ebooks/download/${file.id}`,
-              '@type': file.mimeType
-            }
-          ],
-          'dc:issued': file.createdAt.toISOString()
-        }))
-      }
+        links: [
+          {
+            rel: 'http://opds-spec.org/acquisition',
+            href: `/ebooks/download/${file.id}`,
+            type: file.mimeType
+          }
+        ]
+      }))
     }
 
     // Set header là application/atom+xml
     setHeader(event, 'Content-Type', 'application/atom+xml; charset=utf-8')
-
-    // Convert object thành XML và trả về
+    
+    // Trả về XML
     return xmlBuilder.buildObject(feed)
+    
+    // Comment phần JSON debug
+    // setHeader(event, 'Content-Type', 'application/json') 
+    // return { feed, files }
 
   } catch (error) {
     console.error('Error fetching ebooks:', error)

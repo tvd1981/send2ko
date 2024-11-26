@@ -14,7 +14,7 @@ async function handleUserResponse(userId: string) {
       where: eq(tables.tlgUsers.id, Number(userId))
     })
     const { id2 } = user || {}
-    const opdsUrl = `${config.baseUrl}/ebooks/opds?pk=${id2}`
+    const opdsUrl = `${config.baseUrl}/api/ebooks/opds?pk=${id2}`
     const keyboard = new InlineKeyboard()
       .text("Xem file đã upload", "view_uploads")
       .row()
