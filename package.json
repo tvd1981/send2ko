@@ -8,18 +8,22 @@
     "generate": "nuxt generate",
     "preview": "npx nuxthub preview",
     "deploy": "npx nuxthub deploy",
+    "db:generate": "drizzle-kit generate",
     "postinstall": "nuxt prepare",
     "lint": "eslint ."
   },
   "dependencies": {
     "@nuxt/eslint": "^0.6.1",
     "@nuxthub/core": "^0.8.5",
+    "drizzle-orm": "^0.36.4",
+    "grammy": "^1.32.0",
     "nuxt": "^3.14.0",
     "vue": "^3.5.12",
     "vue-router": "^4.4.5"
   },
   "devDependencies": {
     "@nuxt/eslint-config": "^0.6.1",
+    "drizzle-kit": "^0.28.1",
     "eslint": "^9.14.0",
     "typescript": "^5.6.3",
     "vue-tsc": "^2.1.10",

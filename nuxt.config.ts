@@ -11,9 +11,12 @@ export default defineNuxtConfig({
 
   // Env variables - https://nuxt.com/docs/getting-started/configuration#environment-variables-and-private-tokens
   runtimeConfig: {
+    telegramBotToken: process.env.NUXT_TELEGRAM_BOT_TOKEN,
+    webhookSecret: process.env.NUXT_WEBHOOK_SECRET,
     public: {
       // Can be overridden by NUXT_PUBLIC_HELLO_TEXT environment variable
       helloText: 'Hello from the Edge 👋',
+      baseUrl: process.env.NUXT_PUBLIC_BASE_URL,
     },
   },
   // https://nuxt.com/docs/getting-started/upgrade#testing-nuxt-4
@@ -21,7 +24,10 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-07-30',
 
   // https://hub.nuxt.com/docs/getting-started/installation#options
-  hub: {},
+  hub: {
+    kv: true,
+    database: true,
+  },
 
   // https://eslint.nuxt.com
   eslint: {
