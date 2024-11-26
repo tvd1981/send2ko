@@ -29,7 +29,7 @@ async function handleUserResponse(userId: string) {
 
 async function handleCommonResponse(ctx: Context) {
   const userId = ctx.message?.from.id;
-  // await upsertTelegramUser(ctx.message?.from)
+  await upsertTelegramUser(ctx.message?.from)
   const response = await handleUserResponse(userId!.toString())
   await ctx.reply(response.text, response.keyboard ? {
     reply_markup: response.keyboard
