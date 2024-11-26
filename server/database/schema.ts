@@ -5,7 +5,9 @@ export const tlgUsers = sqliteTable('tlg_users', {
   id2: text('id2').unique(),
   username: text('username'),
   fullName: text('full_name'),
+  languageCode: text('language_code'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 })
 
 export const files = sqliteTable('files', {

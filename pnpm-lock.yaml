@@ -17,6 +17,9 @@ dependencies:
   grammy:
     specifier: ^1.32.0
     version: 1.32.0
+  hashids:
+    specifier: ^2.3.0
+    version: 2.3.0
   nuxt:
     specifier: ^3.14.0
     version: 3.14.1592(drizzle-orm@0.36.4)(eslint@9.15.0)(typescript@5.7.2)(vite@5.4.11)(vue-tsc@2.1.10)
@@ -5013,6 +5016,10 @@ packages:
 
   /hash-sum@2.0.0:
     resolution: {integrity: sha512-WdZTbAByD+pHfl/g9QSsBIIwy8IT+EsPiKDs0KNX+zSHhdDLFKdZu0BQHljvO+0QI/BasbMSUa8wYNCZTvhslg==}
+    dev: false
+
+  /hashids@2.3.0:
+    resolution: {integrity: sha512-ljM73TE/avEhNnazxaj0Dw3BbEUuLC5yYCQ9RSkSUcT4ZSU6ZebdKCIBJ+xT/DnSYW36E9k82GH1Q6MydSIosQ==}
     dev: false
 
   /hasown@2.0.2:

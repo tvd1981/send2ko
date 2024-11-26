@@ -1,0 +1,1 @@
+ALTER TABLE `tlg_users` ADD `updated_at` integer NOT NULL;
