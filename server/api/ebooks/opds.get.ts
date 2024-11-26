@@ -32,28 +32,31 @@ export default defineEventHandler(async (event) => {
       where: eq(tables.tlgFiles.userId, userId),
       orderBy: desc(tables.tlgFiles.createdAt)
     })
-    // Tạo OPDS 2.0 feed
+    // Tạo OPDS 1.x feed
     const feed = {
-      metadata: {
-        title: 'My Ebook Collection',
-        modified: new Date().toISOString(),
-        identifier: `urn:uuid:${userId}`
-      },
-      publications: files.map(file => ({
-        metadata: {
-          identifier: `urn:uuid:${file.id}`,
-          title: file.name,
-          modified: file.createdAt.toISOString(),
-          published: file.createdAt.toISOString
+      'feed': {
+        '$': {
+          'xmlns': 'http://www.w3.org/2005/Atom',
+          'xmlns:dc': 'http://purl.org/dc/terms/',
+          'xmlns:opds': 'http://opds-spec.org/2010/catalog'
         },
-        links: [
-          {
-            rel: 'http://opds-spec.org/acquisition',
-            href: `/api/ebooks/download/${file.id}`,
-            type: file.mimeType
-          }
-        ]
-      }))
+        'id': `urn:uuid:${userId}`,
+        'title': 'My Ebook Collection',
+        'updated': new Date().toISOString(),
+        'entry': files.map(file => ({
+          'id': `urn:uuid:${file.id}`,
+          'title': (file.name ?? '').replace(/[^a-zA-Z0-9.-\s]/g, ''),
+          'updated': file.createdAt.toISOString(),
+          'published': file.createdAt.toISOString(),
+          'link': [{
+            '$': {
+              'rel': 'http://opds-spec.org/acquisition',
+              'href': `/api/ebooks/download/${file.id}`,
+              'type': file.mimeType
+            }
+          }]
+        }))
+      }
     }
 
     // Set header là application/atom+xml
