@@ -29,53 +29,49 @@ export default defineEventHandler(async (event) => {
       orderBy: desc(tables.tlgFiles.createdAt)
     })
 
-    // OPDS 2.0 JSON format
+    // OPDS 1.0 XML format
     const feed = {
-      metadata: {
-        title: "My Ebook Collection",
-        updated: new Date().toISOString(),
-        "@type": "http://opds-spec.org/2.0/catalog",
-        numberOfItems: files.length
-      },
-      navigation: [
-        {
-          title: "Home",
-          href: `/api/ebooks/opds?pk=${pk}`,
-          type: "application/opds+json",
-          rel: "self"
-        }
-      ],
-      publications: files.map(file => ({
-        metadata: {
-          "@type": "http://schema.org/Book",
-          title: file.name,
-          identifier: file.id,
-          modified: file.createdAt.toISOString(),
-          published: file.createdAt.toISOString()
+      'feed': {
+        '$': {
+          'xmlns': 'http://www.w3.org/2005/Atom',
+          'xmlns:opds': 'http://opds-spec.org/2011/06'
         },
-        links: [
+        'id': 'urn:uuid:my-ebook-catalog',
+        'title': 'My Ebook Collection',
+        'updated': new Date().toISOString(),
+        'author': [{
+          'name': 'My Library'
+        }],
+        'link': [
           {
-            rel: "http://opds-spec.org/acquisition",
-            href: `/api/ebooks/${file.id}`,
-            type: file.mimeType
-          },
-          {
-            // Thêm link xóa (optional)
-            rel: "delete",
-            href: `/api/ebooks/${file.id}`,
-            type: "application/json",
-            properties: {
-              method: "DELETE"
+            '$': {
+              'rel': 'self',
+              'href': `/api/ebooks/opds?pk=${pk}`,
+              'type': 'application/atom+xml;profile=opds-catalog'
             }
           }
-        ]
-      }))
+        ],
+        'entry': files.map(file => ({
+          'title': file.name,
+          'id': `urn:uuid:${file.id}`,
+          'updated': file.createdAt.toISOString(),
+          'published': file.createdAt.toISOString(),
+          'link': [
+            {
+              '$': {
+                'rel': 'http://opds-spec.org/acquisition',
+                'href': `/api/ebooks/${file.id}`,
+                'type': file.mimeType
+              }
+            }
+          ]
+        }))
+      }
     }
 
-    // Set header là application/opds+json
-    setHeader(event, 'Content-Type', 'application/opds+json; charset=utf-8')
-    
-    return feed
+    // Convert to XML and set header
+    setHeader(event, 'Content-Type', 'application/atom+xml;profile=opds-catalog;charset=utf-8')
+    return xmlBuilder.buildObject(feed)
 
   } catch (error) {
     console.error('Error fetching ebooks:', error)
