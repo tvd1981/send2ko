@@ -4,7 +4,6 @@ const xmlBuilder = new Builder()
 
 export default defineEventHandler(async (event) => {
   try {
-    // Lấy pk từ query params
     const query = getQuery(event)
     const pk = query.pk as string
     
@@ -15,7 +14,6 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Decode pk để lấy userId
     const userId = hashids.decode(pk)[0] as number
     
     if (!userId) {
@@ -26,48 +24,58 @@ export default defineEventHandler(async (event) => {
     }
 
     const db = useDrizzle()
-    
-    // Query files theo userId, sắp xếp theo createdAt giảm dần
     const files = await db.query.tlgFiles.findMany({
       where: eq(tables.tlgFiles.userId, userId),
       orderBy: desc(tables.tlgFiles.createdAt)
     })
-    // Tạo OPDS 1.x feed
+
+    // OPDS 2.0 JSON format
     const feed = {
-      'feed': {
-        '$': {
-          'xmlns': 'http://www.w3.org/2005/Atom',
-          'xmlns:dc': 'http://purl.org/dc/terms/',
-          'xmlns:opds': 'http://opds-spec.org/2010/catalog'
+      metadata: {
+        title: "My Ebook Collection",
+        updated: new Date().toISOString(),
+        "@type": "http://opds-spec.org/2.0/catalog",
+        numberOfItems: files.length
+      },
+      navigation: [
+        {
+          title: "Home",
+          href: `/api/ebooks/opds?pk=${pk}`,
+          type: "application/opds+json",
+          rel: "self"
+        }
+      ],
+      publications: files.map(file => ({
+        metadata: {
+          "@type": "http://schema.org/Book",
+          title: file.name,
+          identifier: file.id,
+          modified: file.createdAt.toISOString(),
+          published: file.createdAt.toISOString()
         },
-        'id': `urn:uuid:${userId}`,
-        'title': 'My Ebook Collection',
-        'updated': new Date().toISOString(),
-        'entry': files.map(file => ({
-          'id': `urn:uuid:${file.id}`,
-          'title': (file.name ?? '').replace(/[^a-zA-Z0-9.-\s]/g, ''),
-          'updated': file.createdAt.toISOString(),
-          'published': file.createdAt.toISOString(),
-          'link': [{
-            '$': {
-              'rel': 'http://opds-spec.org/acquisition',
-              'href': `/api/ebooks/${file.id}`,
-              'type': file.mimeType
+        links: [
+          {
+            rel: "http://opds-spec.org/acquisition",
+            href: `/api/ebooks/${file.id}`,
+            type: file.mimeType
+          },
+          {
+            // Thêm link xóa (optional)
+            rel: "delete",
+            href: `/api/ebooks/${file.id}`,
+            type: "application/json",
+            properties: {
+              method: "DELETE"
             }
-          }]
-        }))
-      }
+          }
+        ]
+      }))
     }
 
-    // Set header là application/atom+xml
-    setHeader(event, 'Content-Type', 'application/atom+xml; charset=utf-8')
+    // Set header là application/opds+json
+    setHeader(event, 'Content-Type', 'application/opds+json; charset=utf-8')
     
-    // Trả về XML
-    return xmlBuilder.buildObject(feed)
-    
-    // Comment phần JSON debug
-    // setHeader(event, 'Content-Type', 'application/json') 
-    // return { feed, files }
+    return feed
 
   } catch (error) {
     console.error('Error fetching ebooks:', error)
