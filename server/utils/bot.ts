@@ -26,6 +26,7 @@ async function handleUserResponse(userId: string) {
             "- PDF (.pdf)\n" +
             "- EPUB (.epub)\n" +
             "- MOBI (.mobi)\n\n" +
+            "- AZW3 (.azw3)\n\n" +
             "Dung lượng tối đa: 20MB\n\n" +
             `OPDS: ${opdsUrl}\n\n` +
             "Vui lòng chọn chức năng:",
@@ -71,7 +72,8 @@ bot.callbackQuery("view_info", async (ctx) => {
 const SUPPORTED_MIMES = [
   'application/pdf',
   'application/epub+zip',
-  'application/x-mobipocket-ebook'
+  'application/x-mobipocket-ebook',
+  'application/vnd.amazon.ebook'
 ];
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB in bytes
@@ -79,13 +81,13 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB in bytes
 bot.on("message:document", async (ctx) => {
   const doc = ctx.message.document;
   
-  // Kiểm tra mime type
   if (!SUPPORTED_MIMES.includes(doc.mime_type || '')) {
     await ctx.reply(
       "❌ Bot chỉ hỗ trợ các định dạng sau:\n" +
       "- PDF (.pdf)\n" +
       "- EPUB (.epub)\n" +
-      "- MOBI (.mobi)"
+      "- MOBI (.mobi)\n" +
+      "- AZW3 (.azw3)"
     );
     return;
   }
