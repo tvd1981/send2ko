@@ -4,14 +4,19 @@ export default defineEventHandler(async event => {
   try {
     const { id } = event.context.params || {}
     const config = useRuntimeConfig()
-    const db = useDrizzle()
+    // const db = useDrizzle()
     const fileOnServer = await bot.api.getFile(id)
-    const ebookFile = await db.query.tlgFiles.findFirst({
-      where: eq(tables.tlgFiles.id, id)
-    })
+    // const ebookFile = await db.query.tlgFiles.findFirst({
+    //   where: eq(tables.tlgFiles.id, id)
+    // })
     const filePath = fileOnServer.file_path
     const fileUrl = `https://api.telegram.org/file/bot${config.telegramBotToken}/${filePath}`
+    
+    // Redirect to Telegram file URL
+    return sendRedirect(event, fileUrl, 302)
 
+    // Temporarily commented out file fetching logic
+    /*
     // Fetch file content
     const response = await fetch(fileUrl)
     const fileBuffer = await response.arrayBuffer()
@@ -23,6 +28,7 @@ export default defineEventHandler(async event => {
     
     // Return file buffer directly
     return Buffer.from(fileBuffer)
+    */
   } catch (error) {
     console.error('Error downloading file:', error)
     throw createError({
