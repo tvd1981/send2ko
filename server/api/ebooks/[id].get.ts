@@ -15,11 +15,11 @@ export default defineEventHandler(async event => {
     // Fetch file content
     const response = await fetch(fileUrl)
     const fileBuffer = await response.arrayBuffer()
-    let fileName = ebookFile?.name?.replace(/[^a-zA-Z0-9.-\s]/g, '')
-    fileName = fileName?.replace(/\.(epub|pdf|mobi|azw3)$/i, '')
+    // let fileName = ebookFile?.name?.replace(/[^a-zA-Z0-9.-\s]/g, '')
+    // fileName = fileName?.replace(/\.(epub|pdf|mobi|azw3)$/i, '')
     // Set appropriate headers
     setHeader(event, 'Content-Type', 'application/octet-stream')
-    setHeader(event, 'Content-Disposition', `attachment; filename="${fileName}"`)
+    setHeader(event, 'Content-Disposition', `attachment; filename="${ebookFile?.name}"`)
     
     // Return file buffer directly
     return Buffer.from(fileBuffer)
