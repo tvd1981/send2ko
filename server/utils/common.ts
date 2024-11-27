@@ -1,6 +1,5 @@
 import Hashids from 'hashids'
 import { useRuntimeConfig } from '#imports'
-import { EPub } from 'epub2'
 import { bot } from './bot'
 import { tlgEbooks } from '../database/schema'
 import * as JSZip from 'jszip';
