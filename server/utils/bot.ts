@@ -109,11 +109,13 @@ bot.on("message:document", async (ctx) => {
       createdAt: new Date()
     });
     await ctx.reply("✅ Đã lưu file thành công!");
-    const ebookId = await saveEbookInfo(doc.file_id, doc.mime_type || 'application/octet-stream', fileName)
-    if(ebookId){
-      await db.update(tables.tlgFiles).set({
-        ebookId
-      }).where(eq(tables.tlgFiles.id, doc.file_id))
+    if(doc.file_id && doc.mime_type){
+        const ebookId = await saveEbookInfo(doc.file_id, doc.mime_type, fileName)
+        if(ebookId){
+          await db.update(tables.tlgFiles).set({
+            ebookId
+          }).where(eq(tables.tlgFiles.id, doc.file_id))
+        }
     }
   } catch (error) {
     console.error("Error saving file:", error);
