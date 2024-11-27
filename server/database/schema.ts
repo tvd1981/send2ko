@@ -24,7 +24,7 @@ export const tlgEbooks = sqliteTable('tlg_ebooks', {
 export const tlgFiles = sqliteTable('files', {
   id: text('id').primaryKey(),
   userId: integer('user_id'),
-  ebookId: text('ebook_id').references(() => tlgEbooks.id),
+  ebookId: text('ebook_id'),
   name: text('name'),
   mimeType: text('mime_type'),
   size: integer('size'),

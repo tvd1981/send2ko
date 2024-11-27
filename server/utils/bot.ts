@@ -99,18 +99,22 @@ bot.on("message:document", async (ctx) => {
   try {
     const db = useDrizzle()
     const fileName = getFileName(doc.file_name || 'unknown')
-    const ebookId = await saveEbookInfo(doc.file_id, doc.mime_type || 'application/octet-stream', doc.file_name || 'unknown')
+    
     await db.insert(tables.tlgFiles).values({
       id: doc.file_id,
-      ebookId,
       userId: ctx.from.id,
       name: fileName,
       mimeType: doc.mime_type || 'application/octet-stream',
       size: doc.file_size || 0,
       createdAt: new Date()
     });
-
     await ctx.reply("✅ Đã lưu file thành công!");
+    const ebookId = await saveEbookInfo(doc.file_id, doc.mime_type || 'application/octet-stream', fileName)
+    if(ebookId){
+      await db.update(tables.tlgFiles).set({
+        ebookId
+      }).where(eq(tables.tlgFiles.id, doc.file_id))
+    }
   } catch (error) {
     console.error("Error saving file:", error);
     await ctx.reply("❌ Có lỗi xảy ra khi lưu file!");
