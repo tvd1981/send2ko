@@ -11,18 +11,20 @@ export default defineEventHandler(async event => {
     })
     const filePath = fileOnServer.file_path
     const fileUrl = `https://api.telegram.org/file/bot${config.telegramBotToken}/${filePath}`
+    
+    // Redirect to Telegram file URL
+    return sendRedirect(event, fileUrl, 302)
 
-    // Fetch file content
+    // Temporarily commented out file fetching logic
+    /*
     const response = await fetch(fileUrl)
-    const fileBuffer = await response.arrayBuffer()
-    let fileName = ebookFile?.name?.replace(/[^a-zA-Z0-9.-\s]/g, '')
-    fileName = fileName?.replace(/\.(epub|pdf|mobi|azw3)$/i, '')
-    // Set appropriate headers
-    setHeader(event, 'Content-Type', 'application/octet-stream')
+    const buffer = await response.arrayBuffer()
+    
+    setHeader(event, 'Content-Type', ebookFile.mimeType)
     setHeader(event, 'Content-Disposition', `attachment; filename="${fileName}"`)
     
-    // Return file buffer directly
-    return Buffer.from(fileBuffer)
+    return buffer
+    */
   } catch (error) {
     console.error('Error downloading file:', error)
     throw createError({
