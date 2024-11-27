@@ -2,8 +2,8 @@ import Hashids from 'hashids'
 import { useRuntimeConfig } from '#imports'
 import { bot } from './bot'
 import { tlgEbooks } from '../database/schema'
-import * as JSZip from 'jszip';
 import { XMLParser } from 'fast-xml-parser';
+import { unzip, Unzipped } from 'fflate';
 const config = useRuntimeConfig()
 export const hashids = new Hashids(config.idSalt)
 
@@ -20,11 +20,19 @@ async function getEbookMetadata(buffer: Buffer, mimeType: string) {
 
 async function getEpubMetadata(buffer: Buffer) {
   try {
-    const zip = new JSZip();
-    const contents = await zip.loadAsync(buffer);
+    // Convert buffer thành Uint8Array cho fflate
+    const uint8Array = new Uint8Array(buffer);
     
-    // Tìm container.xml
-    const containerXml = await contents.file('META-INF/container.xml')?.async('text');
+    // Unzip EPUB
+    const contents: Unzipped = await new Promise((resolve, reject) => {
+      unzip(uint8Array, (err, unzipped) => {
+        if (err) reject(err);
+        else resolve(unzipped);
+      });
+    });
+    
+    // Đọc container.xml
+    const containerXml = new TextDecoder().decode(contents['META-INF/container.xml']);
     if (!containerXml) return null;
     
     const parser = new XMLParser();
@@ -33,7 +41,7 @@ async function getEpubMetadata(buffer: Buffer) {
     if (!contentPath) return null;
     
     // Đọc content.opf
-    const contentOpf = await contents.file(contentPath)?.async('text');
+    const contentOpf = new TextDecoder().decode(contents[contentPath]);
     if (!contentOpf) return null;
     
     const content = parser.parse(contentOpf);
@@ -43,9 +51,8 @@ async function getEpubMetadata(buffer: Buffer) {
     // Tìm cover image
     let coverPath = null;
     if (manifest?.item) {
-      // Tìm item với properties="cover-image"
       const items = Array.isArray(manifest.item) ? manifest.item : [manifest.item];
-      const coverItem = items.find((item: { [x: string]: string }) => 
+      const coverItem = items.find((item: any) => 
         item['@_properties']?.includes('cover-image') || 
         item['@_id']?.includes('cover') ||
         item['@_href']?.toLowerCase().includes('cover')
@@ -56,15 +63,14 @@ async function getEpubMetadata(buffer: Buffer) {
       }
     }
 
-    // Đọc cover image nếu tìm thấy
+    // Đọc cover image
     let coverBase64 = null;
     if (coverPath) {
-      // Xử lý đường dẫn tương đối
       const basePath = contentPath.split('/').slice(0, -1).join('/');
       const fullPath = basePath ? `${basePath}/${coverPath}` : coverPath;
       
-      const coverData = await contents.file(fullPath)?.async('base64');
-      if (coverData) {
+      if (contents[fullPath]) {
+        const coverData = Buffer.from(contents[fullPath]).toString('base64');
         coverBase64 = coverData;
       }
     }
