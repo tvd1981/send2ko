@@ -132,12 +132,12 @@ async function getEpubMetadata(buffer: Buffer) {
     // console.log('All metadata keys:', Object.keys(metadata || {}));
     
     // Thử kiểm tra các biến thể khác của dc:creator
-    console.log('Alternative creator formats:', {
-      'creator': metadata?.creator,
-      'dcCreator': metadata?.dcCreator,
-      'dc:creator': metadata?.['dc:creator'],
-      'DC:creator': metadata?.['DC:creator']
-    });
+    // console.log('Alternative creator formats:', {
+    //   'creator': metadata?.creator,
+    //   'dcCreator': metadata?.dcCreator,
+    //   'dc:creator': metadata?.['dc:creator'],
+    //   'DC:creator': metadata?.['DC:creator']
+    // });
     
     return {
       title: metadata?.['dc:title'] || null,
@@ -205,17 +205,18 @@ export async function saveEbookInfo(documentId: string, mimeType: string, docume
       cover?: string;
     } | null;
 
-    // console.log('metadata', metadata)
+    console.log('metadata', metadata)
     // Tạo contentKey
-    const normalizedTitle = convertViToEn(metadata?.title || getFileName(documentName ?? '')).toLowerCase();
-    const normalizedAuthor = convertViToEn(metadata?.author || 'Unknown').toLowerCase();
-    const contentKey = `${normalizedTitle}-${normalizedAuthor}`;
-    const contentKeyHash = await hashString(contentKey);
-    const ebookId = hashids.encode(contentKeyHash);
-    const db = useDrizzle()
+    if(metadata?.title && metadata?.author){    
+      const normalizedTitle = convertViToEn(metadata?.title).toLowerCase();
+      const normalizedAuthor = convertViToEn(metadata?.author).toLowerCase();
+      const contentKey = `${normalizedTitle}-${normalizedAuthor}`;
+      const contentKeyHash = await hashString(contentKey);
+      const ebookId = hashids.encode(contentKeyHash);
+      const db = useDrizzle()
     // Kiểm tra xem ebook đã tồn tại chưa
     const existingEbook = await db.query.tlgEbooks.findFirst({
-      where: eq(tlgEbooks.id, ebookId)
+    where: eq(tlgEbooks.id, ebookId)
     });
     
     //Nếu chưa có, thêm vào tlg_ebooks
@@ -232,7 +233,9 @@ export async function saveEbookInfo(documentId: string, mimeType: string, docume
       });
     }
 
-    return ebookId;
+      return ebookId;
+    }
+    return null;
   } catch (error) {
     console.error('Error saving ebook info:', error);
     throw error;
