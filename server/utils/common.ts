@@ -132,12 +132,12 @@ async function getEpubMetadata(buffer: Buffer) {
     // console.log('All metadata keys:', Object.keys(metadata || {}));
     
     // Thử kiểm tra các biến thể khác của dc:creator
-    // console.log('Alternative creator formats:', {
-    //   'creator': metadata?.creator,
-    //   'dcCreator': metadata?.dcCreator,
-    //   'dc:creator': metadata?.['dc:creator'],
-    //   'DC:creator': metadata?.['DC:creator']
-    // });
+    console.log('Alternative creator formats:', {
+      'creator': metadata?.creator,
+      'dcCreator': metadata?.dcCreator,
+      'dc:creator': metadata?.['dc:creator'],
+      'DC:creator': metadata?.['DC:creator']
+    });
     
     return {
       title: metadata?.['dc:title'] || null,
@@ -226,6 +226,7 @@ export async function saveEbookInfo(documentId: string, mimeType: string, docume
         normalizedTitle,
         author: metadata?.author || 'Unknown',
         normalizedAuthor,
+        cover: metadata?.cover || null,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
