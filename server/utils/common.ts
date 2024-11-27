@@ -3,6 +3,8 @@ import { useRuntimeConfig } from '#imports'
 import { EPub } from 'epub2'
 import { bot } from './bot'
 import { tlgEbooks } from '../database/schema'
+import * as JSZip from 'jszip';
+import { XMLParser } from 'fast-xml-parser';
 const config = useRuntimeConfig()
 export const hashids = new Hashids(config.idSalt)
 
@@ -18,22 +20,65 @@ async function getEbookMetadata(buffer: Buffer, mimeType: string) {
 }
 
 async function getEpubMetadata(buffer: Buffer) {
-  return new Promise((resolve, reject) => {
-    const epub = new EPub(buffer.toString());
+  try {
+    const zip = new JSZip();
+    const contents = await zip.loadAsync(buffer);
     
-    epub.on('end', () => {
-      resolve({
-        title: epub.metadata.title,
-        author: epub.metadata.creator,
-        cover: epub.metadata.cover, // URL của cover image
-        language: epub.metadata.language,
-        publisher: epub.metadata.publisher,
-        description: epub.metadata.description
-      });
-    });
+    // Tìm container.xml
+    const containerXml = await contents.file('META-INF/container.xml')?.async('text');
+    if (!containerXml) return null;
+    
+    const parser = new XMLParser();
+    const container = parser.parse(containerXml);
+    const contentPath = container.container?.rootfiles?.rootfile?.['@_full-path'];
+    if (!contentPath) return null;
+    
+    // Đọc content.opf
+    const contentOpf = await contents.file(contentPath)?.async('text');
+    if (!contentOpf) return null;
+    
+    const content = parser.parse(contentOpf);
+    const metadata = content.package?.metadata;
+    const manifest = content.package?.manifest;
 
-    epub.on('error', reject);
-  });
+    // Tìm cover image
+    let coverPath = null;
+    if (manifest?.item) {
+      // Tìm item với properties="cover-image"
+      const items = Array.isArray(manifest.item) ? manifest.item : [manifest.item];
+      const coverItem = items.find((item: { [x: string]: string }) => 
+        item['@_properties']?.includes('cover-image') || 
+        item['@_id']?.includes('cover') ||
+        item['@_href']?.toLowerCase().includes('cover')
+      );
+      
+      if (coverItem) {
+        coverPath = coverItem['@_href'];
+      }
+    }
+
+    // Đọc cover image nếu tìm thấy
+    let coverBase64 = null;
+    if (coverPath) {
+      // Xử lý đường dẫn tương đối
+      const basePath = contentPath.split('/').slice(0, -1).join('/');
+      const fullPath = basePath ? `${basePath}/${coverPath}` : coverPath;
+      
+      const coverData = await contents.file(fullPath)?.async('base64');
+      if (coverData) {
+        coverBase64 = coverData;
+      }
+    }
+    
+    return {
+      title: metadata?.['dc:title'] || null,
+      author: metadata?.['dc:creator'] || null,
+      cover: coverBase64
+    };
+  } catch (error) {
+    console.error('Error reading EPUB metadata:', error);
+    return null;
+  }
 }
 
 function convertViToEn(str: string, toUpperCase: boolean = false): string {

@@ -16,6 +16,7 @@ export const tlgEbooks = sqliteTable('tlg_ebooks', {
   normalizedTitle: text('normalized_title').notNull(),
   author: text('author').notNull(),
   normalizedAuthor: text('normalized_author').notNull(),
+  cover: text('cover'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 })

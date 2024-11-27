@@ -1,0 +1,1 @@
+ALTER TABLE `tlg_ebooks` ADD `cover` text;
