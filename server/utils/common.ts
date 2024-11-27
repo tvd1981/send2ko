@@ -34,15 +34,28 @@ async function getEpubMetadata(buffer: Buffer) {
     // Đọc container.xml
     const containerXml = new TextDecoder().decode(contents['META-INF/container.xml']);
     if (!containerXml) return null;
+    // console.log('containerXml', containerXml);
     
-    const parser = new XMLParser();
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: '@_',
+      textNodeName: '#text',
+    });
     const container = parser.parse(containerXml);
     const contentPath = container.container?.rootfiles?.rootfile?.['@_full-path'];
     if (!contentPath) return null;
+    // console.log('contentPath', contentPath);
+
+    // Kiểm tra xem contentPath có tồn tại trong contents không
+    if (!contents[contentPath]) {
+      console.error(`File not found in unzipped contents: ${contentPath}`);
+      return null;
+    }
     
     // Đọc content.opf
     const contentOpf = new TextDecoder().decode(contents[contentPath]);
     if (!contentOpf) return null;
+    // console.log('contentOpf', contentOpf);
     
     const content = parser.parse(contentOpf);
     const metadata = content.package?.metadata;
@@ -75,9 +88,60 @@ async function getEpubMetadata(buffer: Buffer) {
       }
     }
     
+    // Xử lý author từ nhiều nguồn khác nhau
+    let author = null;
+    
+    // Thử lấy từ calibre:author_link_map trước
+    if (metadata?.['calibre:author_link_map']) {
+      try {
+        const authorMap = JSON.parse(metadata['calibre:author_link_map']);
+        if (Array.isArray(authorMap)) {
+          author = authorMap[0]; // Lấy tác giả đầu tiên
+        } else if (typeof authorMap === 'object') {
+          author = Object.keys(authorMap)[0]; // Lấy key đầu tiên nếu là object
+        }
+      } catch (e) {
+        console.log('Error parsing calibre:author_link_map:', e);
+      }
+    }
+
+    // Nếu không có calibre:author_link_map, thử lấy từ dc:creator
+    if (!author && metadata?.['dc:creator']) {
+      if (Array.isArray(metadata['dc:creator'])) {
+        author = metadata['dc:creator'][0]?._text || metadata['dc:creator'][0];
+      } else if (typeof metadata['dc:creator'] === 'object') {
+        author = metadata['dc:creator']._text || metadata['dc:creator']['#text'];
+      } else {
+        author = metadata['dc:creator'];
+      }
+    }
+    
+    // // Debug container.xml
+    // console.log('Container XML:', containerXml);
+    // console.log('Content Path:', contentPath);
+    
+    // // Debug content.opf
+    // console.log('Content OPF:', contentOpf);
+    
+    // Debug metadata structure
+    // console.log('Full Metadata:', JSON.stringify(metadata, null, 2));
+    // console.log('DC Creator Raw:', metadata?.['dc:creator']);
+    // console.log('Calibre Author Map:', metadata?.['calibre:author_link_map']);
+
+    // Kiểm tra tất cả các key trong metadata
+    // console.log('All metadata keys:', Object.keys(metadata || {}));
+    
+    // Thử kiểm tra các biến thể khác của dc:creator
+    // console.log('Alternative creator formats:', {
+    //   'creator': metadata?.creator,
+    //   'dcCreator': metadata?.dcCreator,
+    //   'dc:creator': metadata?.['dc:creator'],
+    //   'DC:creator': metadata?.['DC:creator']
+    // });
+    
     return {
       title: metadata?.['dc:title'] || null,
-      author: metadata?.['dc:creator'] || null,
+      author: author,
       cover: coverBase64
     };
   } catch (error) {
@@ -113,6 +177,15 @@ export function getFileName(fileName: string): string {
     return `${convertedName}${extension.toLowerCase()}`;
 }
 
+async function hashString(str: string): Promise<number> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = new Uint32Array(hashBuffer);
+  // Lấy 4 byte đầu tiên và chuyển thành số nguyên
+  return hashArray[0];
+}
+
 export async function saveEbookInfo(documentId: string, mimeType: string, documentName: string) {
   try {
     // Lấy file path từ Telegram
@@ -132,18 +205,20 @@ export async function saveEbookInfo(documentId: string, mimeType: string, docume
       cover?: string;
     } | null;
 
+    // console.log('metadata', metadata)
     // Tạo contentKey
     const normalizedTitle = convertViToEn(metadata?.title || getFileName(documentName ?? '')).toLowerCase();
     const normalizedAuthor = convertViToEn(metadata?.author || 'Unknown').toLowerCase();
     const contentKey = `${normalizedTitle}-${normalizedAuthor}`;
-    const ebookId = hashids.encode(contentKey);
+    const contentKeyHash = await hashString(contentKey);
+    const ebookId = hashids.encode(contentKeyHash);
     const db = useDrizzle()
     // Kiểm tra xem ebook đã tồn tại chưa
     const existingEbook = await db.query.tlgEbooks.findFirst({
       where: eq(tlgEbooks.id, ebookId)
     });
-
-    // Nếu chưa có, thêm vào tlg_ebooks
+    
+    //Nếu chưa có, thêm vào tlg_ebooks
     if (!existingEbook) {
       await db.insert(tlgEbooks).values({
         id: ebookId,
