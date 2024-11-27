@@ -15,6 +15,13 @@
       "when": 1732611465950,
       "tag": "0001_cooing_jack_murdock",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1732713465172,
+      "tag": "0002_cute_mongoose",
+      "breakpoints": true
     }
   ]
 }

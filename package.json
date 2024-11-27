@@ -16,6 +16,7 @@
     "@nuxt/eslint": "^0.6.1",
     "@nuxthub/core": "^0.8.5",
     "drizzle-orm": "^0.36.4",
+    "epub2": "^3.0.2",
     "grammy": "^1.32.0",
     "hashids": "^2.3.0",
     "nuxt": "^3.14.0",
