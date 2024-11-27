@@ -51,7 +51,7 @@ export default defineEventHandler(async (event) => {
           'link': [{
             '$': {
               'rel': 'http://opds-spec.org/acquisition',
-              'href': `/api/ebooks/download/${file.id}`,
+              'href': `/api/ebooks/${file.id}`,
               'type': file.mimeType
             }
           }]
