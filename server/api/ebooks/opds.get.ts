@@ -25,10 +25,18 @@ export default defineEventHandler(async (event) => {
     }
 
     const db = useDrizzle()
-    const files = await db.query.tlgFiles.findMany({
-      where: eq(tables.tlgFiles.userId, userId),
-      orderBy: desc(tables.tlgFiles.createdAt)
-    })
+    const filesWithEbooks = await db.select({
+      id: tables.tlgFiles.id,
+      fileName: tables.tlgFiles.name,
+      mimeType: tables.tlgFiles.mimeType,
+      ebookId: tables.tlgFiles.ebookId,
+      ebookTitle: tables.tlgEbooks.title,
+      ebookAuthor: tables.tlgEbooks.author,
+      ebookCover: tables.tlgEbooks.cover,
+      createdAt: tables.tlgFiles.createdAt
+    }).from(tables.tlgFiles).leftJoin(tables.tlgEbooks, eq(tables.tlgFiles.ebookId, tables.tlgEbooks.id))
+    .where(eq(tables.tlgFiles.userId, userId))
+    .orderBy(desc(tables.tlgFiles.createdAt))
 
     // OPDS 1.0 XML format
     const feed = {
@@ -38,7 +46,7 @@ export default defineEventHandler(async (event) => {
           'xmlns:opds': 'http://opds-spec.org/2011/06'
         },
         'id': 'urn:uuid:my-ebook-catalog',
-        'title': 'My Ebook Collection',
+        'title': 'Telegram Ebook Collection',
         'updated': new Date().toISOString(),
         'author': [{
           'name': 'My Library'
@@ -52,9 +60,12 @@ export default defineEventHandler(async (event) => {
             }
           }
         ],
-        'entry': files.map(file => ({
-          'title': file.name,
+        'entry': filesWithEbooks.map(file => ({
+          'title': file.ebookTitle || file.fileName,
           'id': `urn:uuid:${file.id}`,
+          'author': [{
+            'name': file.ebookAuthor || 'Unknown'
+          }],
           'updated': file.createdAt.toISOString(),
           'published': file.createdAt.toISOString(),
           'link': [
@@ -63,6 +74,20 @@ export default defineEventHandler(async (event) => {
                 'rel': 'http://opds-spec.org/acquisition',
                 'href': `/api/ebooks/${file.id}`,
                 'type': file.mimeType
+              }
+            },
+            {
+              '$': {
+                'rel': 'http://opds-spec.org/image',
+                'href': file.ebookId ? `/api/ebooks/cover?id=${file.ebookId}` : '/images/no-cover.jpg',
+                'type': 'image/jpeg'
+              }
+            },
+            {
+              '$': {
+                'rel': 'http://opds-spec.org/image/thumbnail',
+                'href': file.ebookId ? `/api/ebooks/cover?id=${file.ebookId}` : '/images/no-cover.jpg',
+                'type': 'image/jpeg'
               }
             }
           ]
