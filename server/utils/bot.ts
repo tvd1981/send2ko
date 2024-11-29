@@ -16,12 +16,13 @@ async function handleUserResponse(userId: string) {
     })
     const { id2 } = user || {}
     const opdsUrl = `${config.public.baseUrl}/api/ebooks/opds?pk=${id2}`
-    const koboWebUrl = `${config.public.baseUrl}/api/ebooks/web?pk=${id2}`
+    const koboWebUrl = `${config.public.baseUrl}/web?pk=${id2}`
+    const editUrl = `${config.public.baseUrl}/edit?pk=${id2}`
     const supportLink = config.public.supportLink
 
     // Tạo keyboard cơ bản
     const keyboard = new InlineKeyboard()
-      .text('Xem file đã upload', 'view_uploads')
+      .url('Sửa danh sách đã upload', editUrl)
 
     // Chỉ thêm nút support nếu có supportLink
     if (supportLink) {
@@ -37,7 +38,7 @@ async function handleUserResponse(userId: string) {
         + '- AZW3 (.azw3)\n\n'
         + 'Dung lượng tối đa: 20MB\n\n'
         + `OPDS: ${opdsUrl}\n`
-        + `Kobo: ${koboWebUrl}\n\n`
+        + `Kobo web: ${koboWebUrl}\n\n`
         + 'Vui lòng chọn chức năng:',
       keyboard,
     }
