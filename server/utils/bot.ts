@@ -16,6 +16,7 @@ async function handleUserResponse(userId: string) {
     })
     const { id2 } = user || {}
     const opdsUrl = `${config.public.baseUrl}/api/ebooks/opds?pk=${id2}`
+    const koboWebUrl = `${config.public.baseUrl}/api/ebooks/web?pk=${id2}`
     const supportLink = config.public.supportLink
 
     // Tạo keyboard cơ bản
@@ -36,6 +37,7 @@ async function handleUserResponse(userId: string) {
         + '- AZW3 (.azw3)\n\n'
         + 'Dung lượng tối đa: 20MB\n\n'
         + `OPDS: ${opdsUrl}\n\n`
+        + `Kobo: ${koboWebUrl}\n\n`
         + 'Vui lòng chọn chức năng:',
       keyboard,
     }
