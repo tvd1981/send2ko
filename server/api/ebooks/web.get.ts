@@ -4,7 +4,9 @@ export default defineEventHandler(async (event) => {
   try {
     const query = getQuery(event)
     const pk = query.pk as string
-
+    // get user agent
+    const userAgent = getHeader(event, 'user-agent')
+    console.log('userAgent', userAgent)
     if (!pk) {
       throw createError({
         statusCode: 400,
