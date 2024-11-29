@@ -36,7 +36,7 @@ async function handleUserResponse(userId: string) {
         + '- MOBI (.mobi)\n'
         + '- AZW3 (.azw3)\n\n'
         + 'Dung lượng tối đa: 20MB\n\n'
-        + `OPDS: ${opdsUrl}\n\n`
+        + `OPDS: ${opdsUrl}\n`
         + `Kobo: ${koboWebUrl}\n\n`
         + 'Vui lòng chọn chức năng:',
       keyboard,

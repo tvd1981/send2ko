@@ -250,3 +250,57 @@ export async function saveEbookInfo(documentId: string, mimeType: string, docume
     throw error
   }
 }
+
+export async function getFilesByUser(
+  pk: string,
+  options?: {
+    page: number
+    limit: number
+    latestOnly?: boolean
+  },
+) {
+  if (!pk) {
+    throw createError({
+      statusCode: 400,
+      message: 'Missing pk parameter',
+    })
+  }
+
+  const userId = hashids.decode(pk)[0] as number
+  if (!userId) {
+    throw createError({
+      statusCode: 400,
+      message: 'Invalid pk',
+    })
+  }
+
+  const db = useDrizzle()
+  const query = db.select({
+    id: tables.tlgFiles.id,
+    fileName: tables.tlgFiles.name,
+    size: tables.tlgFiles.size,
+    mimeType: tables.tlgFiles.mimeType,
+    ebookId: tables.tlgFiles.ebookId,
+    ebookTitle: tables.tlgEbooks.title,
+    ebookAuthor: tables.tlgEbooks.author,
+    ebookCover: tables.tlgEbooks.cover,
+    createdAt: tables.tlgFiles.createdAt,
+  })
+    .from(tables.tlgFiles)
+    .leftJoin(tables.tlgEbooks, eq(tables.tlgFiles.ebookId, tables.tlgEbooks.id))
+    .where(eq(tables.tlgFiles.userId, userId))
+    .orderBy(desc(tables.tlgFiles.createdAt))
+
+  // Nếu có options thì áp dụng phân trang hoặc lấy mới nhất
+  if (options) {
+    if (options.latestOnly) {
+      return query.limit(1)
+    }
+
+    const offset = (options.page - 1) * options.limit
+    return query.limit(options.limit).offset(offset)
+  }
+
+  // Không có options thì lấy tất cả (cho OPDS)
+  return query
+}

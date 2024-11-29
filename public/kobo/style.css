@@ -1,0 +1,30 @@
+
+body {
+    line-height: 1.3;
+    font-family: serif;
+}
+
+.wrapper {
+    margin: 0 auto;
+    padding: 0 20px;
+    max-width: 650px;
+}
+h1 {
+    font-size: 2em;
+    font-weight: normal;
+    font-style: italic;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #ccc;
+}
+
+th, td {
+    padding: 5px;
+}
+
+th {
+    background-color: #f0f0f0;
+}

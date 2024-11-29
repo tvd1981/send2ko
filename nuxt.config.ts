@@ -8,7 +8,6 @@ export default defineNuxtConfig({
 
   // https://devtools.nuxt.com
   devtools: { enabled: true },
-
   // Env variables - https://nuxt.com/docs/getting-started/configuration#environment-variables-and-private-tokens
   runtimeConfig: {
     telegramBotToken: process.env.NUXT_TELEGRAM_BOT_TOKEN,
@@ -17,6 +16,10 @@ export default defineNuxtConfig({
       baseUrl: process.env.NUXT_PUBLIC_BASE_URL,
       supportLink: process.env.NUXT_PUBLIC_SUPPORT_LINK,
     },
+  },
+  devServer: {
+    host: '0.0.0.0', // Cho phép truy cập từ tất cả các IP
+    port: 3000, // Port mặc định, có thể thay đổi
   },
   // https://nuxt.com/docs/getting-started/upgrade#testing-nuxt-4
   future: { compatibilityVersion: 4 },

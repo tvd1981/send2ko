@@ -26,6 +26,9 @@ dependencies:
   hashids:
     specifier: ^2.3.0
     version: 2.3.0
+  hookable:
+    specifier: ^5.5.3
+    version: 5.5.3
   nuxt:
     specifier: ^3.14.0
     version: 3.14.1592(drizzle-orm@0.36.4)(eslint@9.15.0)(typescript@5.7.2)(vite@5.4.11)(vue-tsc@2.1.10)(xml2js@0.6.2)

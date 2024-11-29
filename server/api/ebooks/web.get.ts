@@ -1,52 +1,21 @@
-export default defineEventHandler(() => {
-  const html = `
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Real-time Clock</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
-        }
-        #clock {
-            font-size: 48px;
-            color: #333;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-    </style>
-</head>
-<body>
-    <div id="clock"></div>
+import { getFilesByUser } from '../../utils/common'
 
-    <script>
-        function updateClock() {
-            const now = new Date();
-            const time = now.toLocaleTimeString('vi-VN');
-            document.getElementById('clock').textContent = time;
-        }
-        
-        // Cập nhật ngay lập tức
-        updateClock();
-        
-        // Cập nhật mỗi 1 giây
-        setInterval(updateClock, 1000);
-    </script>
-</body>
-</html>
-  `
+export default defineEventHandler(async (event) => {
+  const query = getQuery(event)
+  const pk = query.pk as string
 
-  return new Response(html, {
-    headers: {
-      'Content-Type': 'text/html',
-    },
-  })
+  const { send } = await useSSE(event, 'sse:event')
+
+  // Lấy files và gửi ngay lần đầu
+  const files = await getFilesByUser(pk, { page: 1, limit: 10 })
+  send((id: number) => ({ id, data: files }))
+
+  // Có thể thêm interval để check files mới định kỳ
+  const interval = setInterval(async () => {
+    const newFiles = await getFilesByUser(pk, { page: 1, limit: 1, latestOnly: true })
+    send((id: number) => ({ id, data: newFiles }))
+  }, 5000) // Check mỗi 5 giây
+
+  // Dọn dẹp khi client ngắt kết nối
+  event.node.req.on('close', () => clearInterval(interval))
 })

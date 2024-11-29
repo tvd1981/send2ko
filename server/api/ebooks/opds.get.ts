@@ -1,5 +1,5 @@
-import { desc } from 'drizzle-orm'
 import { Builder } from 'xml2js'
+import { getFilesByUser } from '../../utils/common'
 
 const xmlBuilder = new Builder()
 
@@ -7,36 +7,7 @@ export default defineEventHandler(async (event) => {
   try {
     const query = getQuery(event)
     const pk = query.pk as string
-
-    if (!pk) {
-      throw createError({
-        statusCode: 400,
-        message: 'Missing pk parameter',
-      })
-    }
-
-    const userId = hashids.decode(pk)[0] as number
-
-    if (!userId) {
-      throw createError({
-        statusCode: 400,
-        message: 'Invalid pk',
-      })
-    }
-
-    const db = useDrizzle()
-    const filesWithEbooks = await db.select({
-      id: tables.tlgFiles.id,
-      fileName: tables.tlgFiles.name,
-      mimeType: tables.tlgFiles.mimeType,
-      ebookId: tables.tlgFiles.ebookId,
-      ebookTitle: tables.tlgEbooks.title,
-      ebookAuthor: tables.tlgEbooks.author,
-      ebookCover: tables.tlgEbooks.cover,
-      createdAt: tables.tlgFiles.createdAt,
-    }).from(tables.tlgFiles).leftJoin(tables.tlgEbooks, eq(tables.tlgFiles.ebookId, tables.tlgEbooks.id))
-      .where(eq(tables.tlgFiles.userId, userId))
-      .orderBy(desc(tables.tlgFiles.createdAt))
+    const filesWithEbooks = await getFilesByUser(pk)
 
     // OPDS 1.0 XML format
     const feed = {
