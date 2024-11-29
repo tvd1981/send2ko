@@ -1,25 +1,26 @@
 <script setup lang="ts">
 useHead({
   title: 'Send to Kobo',
-  // script: [
-  //   { src: '/kobo/index.js', tagPosition: 'bodyClose' },
-  // ],
+  script: [
+    { src: '/kobo/download.js', defer: true },
+    { src: '/kobo/index.js', tagPosition: 'bodyClose' },
+  ],
   link: [
     { rel: 'stylesheet', href: '/kobo/style.css' },
   ],
 })
 
-const loadScript = () => {
-  const script = document.createElement('script')
-  script.src = '/kobo/index.js'
-  script.type = 'text/javascript'
-  script.async = false
-  document.body.appendChild(script)
-}
+// const loadScript = () => {
+//   const script = document.createElement('script')
+//   script.src = '/kobo/index.js'
+//   script.type = 'text/javascript'
+//   script.async = false
+//   document.body.appendChild(script)
+// }
 
-onMounted(() => {
-  loadScript()
-})
+// onMounted(() => {
+//   loadScript()
+// })
 </script>
 
 <template>
