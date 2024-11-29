@@ -1,6 +1,6 @@
 import { bot } from '../../utils/bot'
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async (event) => {
   try {
     const { id } = event.context.params || {}
     const config = useRuntimeConfig()
@@ -11,7 +11,7 @@ export default defineEventHandler(async event => {
     // })
     const filePath = fileOnServer.file_path
     const fileUrl = `https://api.telegram.org/file/bot${config.telegramBotToken}/${filePath}`
-    
+
     // Redirect to Telegram file URL
     return sendRedirect(event, fileUrl, 302)
 
@@ -25,15 +25,16 @@ export default defineEventHandler(async event => {
     // Set appropriate headers
     setHeader(event, 'Content-Type', 'application/octet-stream')
     setHeader(event, 'Content-Disposition', `attachment; filename="${ebookFile?.name}"`)
-    
+
     // Return file buffer directly
     return Buffer.from(fileBuffer)
     */
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Error downloading file:', error)
     throw createError({
       statusCode: 500,
-      message: 'Error downloading file'
+      message: 'Error downloading file',
     })
   }
 })

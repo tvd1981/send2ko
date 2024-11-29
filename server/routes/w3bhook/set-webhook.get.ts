@@ -1,6 +1,6 @@
-import { bot } from "../../utils/bot"
+import { bot } from '../../utils/bot'
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async () => {
   const config = useRuntimeConfig()
   const webhookUrl = `${config.public.baseUrl}/w3bhook`
 
@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
     await bot.api.setWebhook(webhookUrl, {
       secret_token: config.webhookSecret,
       drop_pending_updates: true,
-      allowed_updates: ["message", "callback_query"] // Chỉ định các updates bạn muốn nhận
+      allowed_updates: ['message', 'callback_query'], // Chỉ định các updates bạn muốn nhận
     })
 
     // Kiểm tra webhook info
@@ -18,13 +18,14 @@ export default defineEventHandler(async (event) => {
     return {
       ok: true,
       webhook: webhookUrl,
-      info: webhookInfo
+      info: webhookInfo,
     }
-  } catch (error: any) {
+  }
+  catch (error: unknown) {
     console.error('Set webhook error:', error)
     throw createError({
       statusCode: 500,
-      message: error?.message || 'Set webhook error'
+      message: error instanceof Error ? error.message : 'Set webhook error',
     })
   }
 })

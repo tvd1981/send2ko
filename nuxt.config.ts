@@ -14,9 +14,8 @@ export default defineNuxtConfig({
     telegramBotToken: process.env.NUXT_TELEGRAM_BOT_TOKEN,
     webhookSecret: process.env.NUXT_WEBHOOK_SECRET,
     public: {
-      // Can be overridden by NUXT_PUBLIC_HELLO_TEXT environment variable
-      helloText: 'Hello from the Edge 👋',
       baseUrl: process.env.NUXT_PUBLIC_BASE_URL,
+      supportLink: process.env.NUXT_PUBLIC_SUPPORT_LINK,
     },
   },
   // https://nuxt.com/docs/getting-started/upgrade#testing-nuxt-4

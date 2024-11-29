@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     if (!id || typeof id !== 'string') {
       throw createError({
         statusCode: 400,
-        message: 'ID is required and must be a string'
+        message: 'ID is required and must be a string',
       })
     }
 
@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
     if (!file || !file.mimeType || !file.name) {
       throw createError({
         statusCode: 400,
-        message: 'File information not found'
+        message: 'File information not found',
       })
     }
 
@@ -28,14 +28,15 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       data: {
-        ebookId
-      }
+        ebookId,
+      },
     }
-
-  } catch (error: any) {
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  catch (error: any) {
     throw createError({
       statusCode: error.statusCode || 500,
-      message: error.message || 'Internal Server Error'
+      message: error.message || 'Internal Server Error',
     })
   }
-}) 
+})
