@@ -1,6 +1,21 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const pk = urlParams.get('pk');
+var ebooksList = [];
+var eleDownload = document.getElementById('download');
+var pollTimer = null;
+
+function getQueryParam(param) {
+    var search = window.location.search.substring(1);
+    var params = search.split('&');
+    for (var i = 0; i < params.length; i++) {
+        var pair = params[i].split('=');
+        if (pair[0] === param) {
+            return decodeURIComponent(pair[1]);
+        }
+    }
+    return null;
+}
+
+function init() {
+    var pk = getQueryParam('pk');
 
     if (!pk || pk.trim() === '') {
         window.location.href = '/';
@@ -8,13 +23,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Khởi tạo mảng lưu trữ dữ liệu
-    let ebooksList = [];
     
-    // Khởi tạo SSE connection
-    const eventSource = new EventSource(`/api/ebooks/web?pk=${pk}`);
-
     // Tạo bảng hiển thị
-    const table = document.createElement('table');
+    var table = document.createElement('table');
+    
     table.innerHTML = `
         <thead>
             <tr>
@@ -24,29 +36,37 @@ document.addEventListener('DOMContentLoaded', function() {
         </thead>
         <tbody id="ebooks"></tbody>
     `;
-    document.querySelector('#download').appendChild(table);
+    eleDownload.appendChild(table);
 
-    // Lắng nghe sự kiện message
-    eventSource.onmessage = function(event) {
-        const response = JSON.parse(event.data);
-        
-        if (response.id === 0) {
-            // Dữ liệu ban đầu
+    function fetchEbooks(id, page, limit, latestOnly) {
+        id = id || 0;
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', `/api/ebooks/web?pk=${pk}&page=${page}&limit=${limit}&latestOnly=${latestOnly}`);
+        xhr.onload = function() {
+            var response = JSON.parse(xhr.responseText);
             ebooksList = response.data;
-            updateTable();
-            document.querySelector('#download').style.display = 'block';
-        } else {
-            // Update mới
-            const newData = response.data[0];
-            if (newData && !ebooksList.some(item => item.id === newData.id)) {
-                ebooksList.unshift(newData); // Thêm vào đầu mảng
+            if(id !== 0) {
+                var newData = response.data[0];
+                var found = false;
+                for (var i = 0; i < ebooksList.length; i++) {
+                    if (ebooksList[i].id === newData.id) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (newData && !found) {
+                    ebooksList.unshift(newData); // Thêm vào đầu mảng
+                    updateTable();
+                }
+            } else {
                 updateTable();
             }
-        }
-    };
+        };
+        xhr.send();
+    }
 
     function updateTable() {
-        const tbody = document.querySelector('#ebooks');
+        var tbody = document.querySelector('#ebooks');
         tbody.innerHTML = ebooksList.map(file => `
             <tr>
                 <td><a href="/api/ebooks/${file.id}">${file.ebookTitle ? file.ebookTitle : file.fileName}</a></td>
@@ -57,9 +77,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function formatFileSize(bytes) {
         if (!bytes) return 'N/A';
-        const units = ['B', 'KB', 'MB', 'GB'];
-        let size = bytes;
-        let unitIndex = 0;
+        var units = ['B', 'KB', 'MB', 'GB'];
+        var size = bytes;
+        var unitIndex = 0;
         while (size >= 1024 && unitIndex < units.length - 1) {
             size /= 1024;
             unitIndex++;
@@ -67,9 +87,18 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${size.toFixed(2)} ${units[unitIndex]}`;
     }
 
-    // Xử lý khi có lỗi
-    eventSource.onerror = function(error) {
-        console.error('Lỗi SSE:', error);
-        eventSource.close();
-    };
-});
+    fetchEbooks(0, 1, 10, false);
+
+    pollTimer = setInterval(() => {
+        fetchEbooks(1, 1, 1, true);
+    }, 5000);
+
+}
+
+window.onload = function() {
+    eleDownload.style.display = 'block';
+    if(pollTimer) {
+        clearInterval(pollTimer);
+    }
+    init();
+}
