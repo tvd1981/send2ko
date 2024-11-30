@@ -18,10 +18,11 @@ export default defineEventHandler(async (event) => {
     const limit = query.limit ? parseInt(query.limit as string) : 10
     const latestOnly = query.latestOnly ? query.latestOnly === 'true' : false
 
-    const files = await getFilesByUser(pk, { page, limit, latestOnly })
+    const { data, totalRows } = await getFilesByUser(pk, { page, limit, latestOnly })
 
     return {
-      data: files,
+      data,
+      totalRows,
     }
   }
   catch (error) {

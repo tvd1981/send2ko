@@ -250,6 +250,11 @@ export async function saveEbookInfo(documentId: string, mimeType: string, docume
     throw error
   }
 }
+export type ResultFilesQuery = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: any[]
+  totalRows: number
+}
 
 export async function getFilesByUser(
   pk: string,
@@ -258,7 +263,8 @@ export async function getFilesByUser(
     limit: number
     latestOnly?: boolean
   },
-) {
+  fromDevice?: boolean,
+): Promise<ResultFilesQuery> {
   if (!pk) {
     throw createError({
       statusCode: 400,
@@ -273,7 +279,7 @@ export async function getFilesByUser(
       message: 'Invalid pk',
     })
   }
-
+  let totalRows = 0
   const db = useDrizzle()
   const query = db.select({
     id: tables.tlgFiles.id,
@@ -291,16 +297,28 @@ export async function getFilesByUser(
     .where(eq(tables.tlgFiles.userId, userId))
     .orderBy(desc(tables.tlgFiles.createdAt))
 
+  if (!fromDevice) {
+    totalRows = (await db.select({ count: sql<number>`count(*)` }).from(tables.tlgFiles).where(eq(tables.tlgFiles.userId, userId)))[0].count
+  }
+
   // Nếu có options thì áp dụng phân trang hoặc lấy mới nhất
   if (options) {
     if (options.latestOnly) {
-      return query.limit(1)
+      return {
+        data: await query.limit(1),
+        totalRows: totalRows,
+      }
     }
 
     const offset = (options.page - 1) * options.limit
-    return query.limit(options.limit).offset(offset)
+    return {
+      data: await query.limit(options.limit).offset(offset),
+      totalRows: totalRows,
+    }
   }
 
-  // Không có options thì lấy tất cả (cho OPDS)
-  return query
+  return {
+    data: await query,
+    totalRows,
+  }
 }

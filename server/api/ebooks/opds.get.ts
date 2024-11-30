@@ -7,6 +7,7 @@ export default defineEventHandler(async (event) => {
   try {
     const query = getQuery(event)
     const pk = query.pk as string
+
     const filesWithEbooks = await getFilesByUser(pk)
 
     // OPDS 1.0 XML format
@@ -31,7 +32,15 @@ export default defineEventHandler(async (event) => {
             },
           },
         ],
-        entry: filesWithEbooks.map(file => ({
+        entry: (filesWithEbooks as unknown as Array<{
+          ebookTitle?: string
+          fileName: string
+          id: string
+          ebookAuthor?: string
+          createdAt: Date
+          mimeType: string
+          ebookId?: string
+        }>).map(file => ({
           title: file.ebookTitle || file.fileName,
           id: `urn:uuid:${file.id}`,
           author: [{

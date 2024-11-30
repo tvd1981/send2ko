@@ -6,6 +6,7 @@ export const tlgUsers = sqliteTable('tlg_users', {
   username: text('username'),
   fullName: text('full_name'),
   languageCode: text('language_code'),
+  settings: text('settings', { mode: 'json' }).default('{"web": 20, "opds": 20}'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 })

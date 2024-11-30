@@ -163,6 +163,10 @@ async function upsertTelegramUser(from: User | undefined) {
         fullName,
         username: from.username || null,
         languageCode: from.language_code || null,
+        settings: {
+          web: 20,
+          opds: 20,
+        },
         createdAt: new Date(),
         updatedAt: new Date(),
       })

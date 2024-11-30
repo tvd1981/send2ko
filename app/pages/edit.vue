@@ -1,5 +1,5 @@
 <template>
-  <div class="p-4">
+  <div class="p-4 min-h-screen mb-10">
     <template v-if="isMounted">
       <!-- Header -->
       <UContainer>
@@ -7,43 +7,52 @@
           <h1 class="text-2xl font-bold">
             Send2Ko
           </h1>
-          <!-- Action bar khi có items được chọn -->
-          <div v-if="hasSelectedItems" class="flex items-center gap-2">
-            <span class="text-sm text-gray-500">
-              Đã chọn {{ selectedItems.length }} mục
-            </span>
-            <UButton
-              icon="i-heroicons-trash"
-              color="red"
-              variant="soft"
-              @click="deleteSelected"
-            >
-              Xóa đã chọn
-            </UButton>
-          </div>
-          <!-- Settings button khi không có items được chọn -->
-          <UButton
-            v-else
-            icon="i-heroicons-cog-6-tooth"
-            color="gray"
-            variant="ghost"
-            @click="openSettings"
-          />
         </div>
       </UContainer>
-
+      <UDivider label="Device Settings" type="solid" />
+      <UForm :state="formSettings" @submit="handleSubmit">
+        <UFormGroup label="OPDS" help="Number of ebooks to display on OPDS">
+          <USelect v-model="formSettings.opds" :options="perDisplay" />
+        </UFormGroup>
+        <UFormGroup label="Web" help="Number of ebooks to display on Web">
+          <USelect v-model="formSettings.web" :options="perDisplay" />
+        </UFormGroup>
+        <UButton type="submit" :loading="isSaving">
+          Save
+        </UButton>
+      </UForm>
+      <hr class="my-4">
+      <UAlert
+        icon="i-heroicons-exclamation-circle"
+        color="red"
+        variant="soft"
+        title="Warning!"
+        description="Deleting an ebook here only removes it from this list, not from the Telegram bot."
+      />
       <!-- Table -->
       <UTable
-        v-model:selected="selectedItems"
+        v-model="selectedItems"
         :rows="items"
         :columns="columns"
         :loading="loading"
+        :loading-state="{ icon: 'i-heroicons-arrow-path-20-solid', label: 'Loading...' }"
         :sort="sort"
-        :pagination="pagination"
         selection="multiple"
-        @update:sort="sort = $event"
-        @update:pagination="pagination = $event"
+        selectable
+        @select="handleSelect"
       >
+        <template #content-header>
+          <div class="flex items-center gap-2">
+            <UButton
+              v-if="selectedItems.length > 0"
+              icon="i-heroicons-trash"
+              color="red"
+              variant="ghost"
+              size="xs"
+              @click="deleteSelected"
+            />
+          </div>
+        </template>
         <!-- Sửa lại template name để match với column key -->
         <template #content-data="{ row }">
           <div class="flex flex-col p-2">
@@ -85,15 +94,16 @@
             </div>
           </div>
         </template>
-
-        <!-- Thêm template cho selection -->
-        <template #selection="{ selected, row }">
-          <UCheckbox
-            :model-value="selected"
-            @update:model-value="$emit('update:selected', row)"
-          />
-        </template>
       </UTable>
+
+      <!-- Đặt pagination ở ngoài UTable -->
+      <div class="flex justify-end px-3 py-3.5 border-t border-gray-200 dark:border-gray-700">
+        <UPagination
+          v-model="pagination.page"
+          :page-count="pagination.perPage"
+          :total="pagination.totalItems"
+        />
+      </div>
     </template>
   </div>
 </template>
@@ -102,7 +112,19 @@
 definePageMeta({
   middleware: 'auth',
 })
+useHead({
+  title: 'Edit | Send2Ko',
+})
+
 const route = useRoute()
+const toast = useToast()
+const formSettings = ref({
+  web: 20,
+  opds: 20,
+})
+const isSaving = ref(false)
+const perDisplay = [10, 20, 30, 40, 50]
+const pk = route.query.pk
 
 // Pagination state
 const pagination = ref({
@@ -113,9 +135,9 @@ const pagination = ref({
 // Cập nhật khai báo API URL và data fetching
 const apiURL = computed(() => {
   const params = new URLSearchParams({
-    pk: route.query.pk,
+    pk: pk,
     page: pagination.value.page.toString(),
-    limit: pagination.value.perPage.toString(),
+    limit: 10,
   })
   return `/api/ebooks/web?${params}`
 })
@@ -129,15 +151,16 @@ const { data, loading, refresh } = await useLazyFetch(apiURL, {
 })
 
 const items = computed(() => data.value?.data || [])
-const totalItems = computed(() => data.value?.total || 0)
 
 const selectedItems = ref([])
 
 // Table columns definition
-const columns = computed(() => [{
-  key: 'content',
-  label: '',
-}])
+const columns = computed(() => [
+  {
+    key: 'content',
+    label: '',
+  },
+])
 
 // Sorting state
 const sort = ref({
@@ -147,12 +170,10 @@ const sort = ref({
 
 // Watch totalItems để cập nhật pagination
 watchEffect(() => {
-  pagination.value.totalItems = totalItems.value
+  if (data.value?.totalRows) {
+    pagination.value.totalItems = data.value.totalRows
+  }
 })
-
-// Check if any items are selected
-
-const hasSelectedItems = computed(() => selectedItems.value.length > 0)
 
 // Format date function
 const formatDate = (date) => {
@@ -165,22 +186,37 @@ const formatDate = (date) => {
   })
 }
 
-// Handle settings button click
-const openSettings = () => {
-  // Thêm logic mở settings dialog
-  console.log('Open settings')
+const deleteItems = async (ids) => {
+  if (ids.length === 0) {
+    return
+  }
+  const { error } = await useFetch(`/api/ebooks/remove`, {
+    method: 'POST',
+    body: { ids, pk: route.query.pk },
+  })
+  if (error.value) {
+    toast.add({
+      title: 'Error',
+      description: error.value.data.message,
+    })
+  }
+  else {
+    await refresh()
+    toast.add({
+      title: 'Success',
+      description: 'Delete item successfully!',
+    })
+  }
 }
 
 // Handle delete single item
-const deleteItem = (row) => {
-  // Thêm logic xóa item
-  console.log('Delete item:', row)
+const deleteItem = async (row) => {
+  await deleteItems([row.id])
 }
 
 // Handle delete selected items
-
-const deleteSelected = () => {
-  console.log('Delete selected items:', selectedItems.value)
+const deleteSelected = async () => {
+  await deleteItems(selectedItems.value.map(item => item.id))
 }
 
 // Hàm chuyển đổi MIME type sang display format
@@ -194,18 +230,41 @@ const getMimeTypeDisplay = (mimeType) => {
   return mimeTypeMap[mimeType] || 'Unknown'
 }
 
-// Hàm xác định màu cho type badge
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getTypeColor = (mimeType) => {
-  const typeColors = {
-    PDF: 'red',
-    EPUB: 'blue',
-    MOBI: 'green',
-    AZW3: 'purple',
-    default: 'gray',
+const handleSelect = (row) => {
+  const index = selectedItems.value.findIndex(item => item.id === row.id)
+  if (index === -1) {
+    selectedItems.value.push(row)
   }
-  const displayType = getMimeTypeDisplay(mimeType)
-  return typeColors[displayType] || typeColors.default
+  else {
+    selectedItems.value.splice(index, 1)
+  }
+}
+
+const handleSubmit = async () => {
+  try {
+    isSaving.value = true
+    const newSettings = {
+      opds: parseInt(formSettings.value.opds),
+      web: parseInt(formSettings.value.web),
+    }
+    await $fetch(`/api/ebooks/settings`, {
+      method: 'PATCH',
+      body: { pk, settings: newSettings },
+    })
+    toast.add({
+      title: 'Success',
+      description: 'Settings saved successfully!',
+    })
+  }
+  catch (error) {
+    toast.add({
+      title: 'Error',
+      description: error.message,
+    })
+  }
+  finally {
+    isSaving.value = false
+  }
 }
 
 // Sửa lại watch
@@ -220,11 +279,8 @@ onMounted(async () => {
   isMounted.value = true
   await refresh()
   initialFetchDone.value = true
+  formSettings.value = await $fetch(`/api/ebooks/settings?pk=${pk}`)
 })
-
-// Khai báo emit để sử dụng cho việc cập nhật selected
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const emit = defineEmits(['update:selected'])
 </script>
 
 <style scoped>

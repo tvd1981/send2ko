@@ -2,4 +2,5 @@
   <NuxtRouteAnnouncer />
   <NuxtLoadingIndicator />
   <NuxtPage />
+  <UNotifications />
 </template>

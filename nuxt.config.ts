@@ -5,6 +5,12 @@ export default defineNuxtConfig({
 
   // https://devtools.nuxt.com
   devtools: { enabled: true },
+  vue: {
+    compilerOptions: {
+      isCustomElement: tag => ['modal-settings'].includes(tag),
+    },
+
+  },
   // Env variables - https://nuxt.com/docs/getting-started/configuration#environment-variables-and-private-tokens
   runtimeConfig: {
     telegramBotToken: process.env.NUXT_TELEGRAM_BOT_TOKEN,
@@ -27,7 +33,6 @@ export default defineNuxtConfig({
     kv: true,
     database: true,
   },
-
   // https://eslint.nuxt.com
   eslint: {
     config: {
