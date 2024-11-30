@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     const query = getQuery(event)
     const pk = query.pk as string
 
-    const filesWithEbooks = await getFilesByUser(pk)
+    const filesWithEbooks = await getFilesByUser(pk, undefined, 'opds')
 
     // OPDS 1.0 XML format
     const feed = {

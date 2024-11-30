@@ -37,7 +37,7 @@ function updateTable() {
 function fetchEbooks(pk, id, page, limit, latestOnly) {
     id = id || 0;
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', '/api/ebooks/web?pk=' + pk + '&page=' + page + '&limit=' + limit + '&latestOnly=' + latestOnly);
+    xhr.open('GET', '/api/ebooks/web?pk=' + pk + '&page=' + page + '&limit=' + limit + '&latestOnly=' + latestOnly + '&fromDevice=web');
     xhr.onload = function() {
         var response = JSON.parse(xhr.responseText);
         ebooksList = response.data;

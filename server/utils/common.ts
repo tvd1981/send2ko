@@ -263,7 +263,7 @@ export async function getFilesByUser(
     limit: number
     latestOnly?: boolean
   },
-  fromDevice?: boolean,
+  fromDevice?: string,
 ): Promise<ResultFilesQuery> {
   if (!pk) {
     throw createError({
@@ -271,16 +271,18 @@ export async function getFilesByUser(
       message: 'Missing pk parameter',
     })
   }
-
-  const userId = hashids.decode(pk)[0] as number
-  if (!userId) {
+  const db = useDrizzle()
+  const user = await db.query.tlgUsers.findFirst({
+    where: eq(tables.tlgUsers.id2, pk),
+  })
+  if (!user) {
     throw createError({
       statusCode: 400,
       message: 'Invalid pk',
     })
   }
   let totalRows = 0
-  const db = useDrizzle()
+
   const query = db.select({
     id: tables.tlgFiles.id,
     fileName: tables.tlgFiles.name,
@@ -294,11 +296,20 @@ export async function getFilesByUser(
   })
     .from(tables.tlgFiles)
     .leftJoin(tables.tlgEbooks, eq(tables.tlgFiles.ebookId, tables.tlgEbooks.id))
-    .where(eq(tables.tlgFiles.userId, userId))
+    .where(eq(tables.tlgFiles.userId, user.id))
     .orderBy(desc(tables.tlgFiles.createdAt))
 
   if (!fromDevice) {
-    totalRows = (await db.select({ count: sql<number>`count(*)` }).from(tables.tlgFiles).where(eq(tables.tlgFiles.userId, userId)))[0].count
+    totalRows = (await db.select({ count: sql<number>`count(*)` }).from(tables.tlgFiles).where(eq(tables.tlgFiles.userId, user.id)))[0].count
+  }
+  else {
+    const { settings = {} } = user as { settings?: { web?: number, opds?: number } }
+    if (fromDevice === 'web') {
+      query.limit(settings.web ?? 20)
+    }
+    else if (fromDevice === 'opds') {
+      query.limit(settings.opds ?? 20)
+    }
   }
 
   // Nếu có options thì áp dụng phân trang hoặc lấy mới nhất

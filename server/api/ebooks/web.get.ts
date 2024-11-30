@@ -17,8 +17,8 @@ export default defineEventHandler(async (event) => {
     const page = query.page ? parseInt(query.page as string) : 1
     const limit = query.limit ? parseInt(query.limit as string) : 10
     const latestOnly = query.latestOnly ? query.latestOnly === 'true' : false
-
-    const { data, totalRows } = await getFilesByUser(pk, { page, limit, latestOnly })
+    const fromDevice = query.fromDevice as string | undefined
+    const { data, totalRows } = await getFilesByUser(pk, { page, limit, latestOnly }, fromDevice)
 
     return {
       data,
