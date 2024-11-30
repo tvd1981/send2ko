@@ -22,31 +22,31 @@ async function handleUserResponse(userId: string) {
 
     // Tạo keyboard cơ bản
     const keyboard = new InlineKeyboard()
-      .url('Sửa danh sách đã upload', editUrl)
+      .url('Edit the uploaded list', editUrl)
 
     // Chỉ thêm nút support nếu có supportLink
     if (supportLink) {
-      keyboard.row().url('Liên hệ hỗ trợ', supportLink)
+      keyboard.row().url('Support group', supportLink)
     }
 
     return {
-      text: 'Chào mừng! 📚\n\n'
-        + 'Bot hỗ trợ các định dạng file:\n'
+      text: 'Welcome! 📚\n\n'
+        + 'The bot supports file formats:\n'
         + '- PDF (.pdf)\n'
         + '- EPUB (.epub)\n'
         + '- MOBI (.mobi)\n'
         + '- AZW3 (.azw3)\n\n'
-        + 'Dung lượng tối đa: 20MB\n\n'
+        + 'Maximum file size: 20MB\n\n'
         + `OPDS: ${opdsUrl}\n`
         + `Kobo web: ${koboWebUrl}\n\n`
-        + 'Vui lòng chọn chức năng:',
+        + 'Choose a function:',
       keyboard,
     }
   }
   catch (error) {
     console.error('Error:', error)
     return {
-      text: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.',
+      text: 'Sorry, something went wrong. Please try again later.',
       keyboard: null,
     }
   }
@@ -76,11 +76,11 @@ bot.on('message:text', async (ctx) => {
 export const handleUpdate = webhookCallback(bot, 'cloudflare')
 
 // Handler cho nút view_info
-bot.callbackQuery('view_info', async (ctx) => {
-  const user = ctx.from
-  const fullName = user.first_name + ' ' + user.last_name
-  await ctx.reply(`Đây là thông tin của bạn..., ${user.id}, ${user.username}, ${fullName}`)
-})
+// bot.callbackQuery('view_info', async (ctx) => {
+//   const user = ctx.from
+//   const fullName = user.first_name + ' ' + user.last_name
+//   await ctx.reply(`Đây là thông tin của bạn..., ${user.id}, ${user.username}, ${fullName}`)
+// })
 
 const SUPPORTED_MIMES = [
   'application/pdf',
@@ -96,7 +96,7 @@ bot.on('message:document', async (ctx) => {
   // const userId = ctx.message.fwd_from ?
   if (!SUPPORTED_MIMES.includes(doc.mime_type || '')) {
     await ctx.reply(
-      '❌ Bot chỉ hỗ trợ các định dạng sau:\n'
+      '❌ The bot only supports the following formats:\n'
       + '- PDF (.pdf)\n'
       + '- EPUB (.epub)\n'
       + '- MOBI (.mobi)\n'
@@ -107,7 +107,7 @@ bot.on('message:document', async (ctx) => {
 
   // Kiểm tra dung lượng file
   if (doc.file_size && doc.file_size > MAX_FILE_SIZE) {
-    await ctx.reply('❌ File quá dung lượng cho phép (tối đa 20MB)')
+    await ctx.reply('❌ The uploaded file is larger than the allowed 20MB')
     return
   }
 
@@ -123,7 +123,7 @@ bot.on('message:document', async (ctx) => {
       size: doc.file_size || 0,
       createdAt: new Date(),
     })
-    await ctx.reply('✅ Đã lưu file thành công!')
+    await ctx.reply('✅ Successfully added to your list!')
     if (doc.file_id && doc.mime_type) {
       const ebookId = await saveEbookInfo(doc.file_id, doc.mime_type, fileName)
       if (ebookId) {
@@ -135,7 +135,7 @@ bot.on('message:document', async (ctx) => {
   }
   catch (error) {
     console.error('Error saving file:', error)
-    await ctx.reply('❌ Có lỗi xảy ra khi lưu file!')
+    await ctx.reply('❌ Sorry, something went wrong. Please try again!')
   }
 })
 
