@@ -1,35 +1,28 @@
-# Hello Edge
-
-A minimal [Nuxt](https://nuxt.com) starter deployed on the Edge using [NuxtHub](https://hub.nuxt.com).
-
-https://hello.nuxt.dev
-
-<a href="https://hello.nuxt.dev">
-<img src="https://github.com/nuxt-hub/hello-edge/assets/904724/99d1bd54-ef7e-4ac9-83ad-0a290f85edcf" alt="Hello World template for NuxtHub" />
-</a>
-
-## Features
-
-- Server-Side rendering on Cloudflare Workers
-- ESLint setup
-- Ready to add a database, blob and KV storage
-- One click deploy on 275+ locations for free
+# Warning: I am not responsible for any user-uploaded files to Telegram as this project is intended for personal use.
 
 ## Setup
 
-Make sure to install the dependencies with [pnpm](https://pnpm.io/installation#using-corepack):
+Go to [NuxtHub](https://hub.nuxt.com) and create a new project, import this repository and add the following environment variables:
+```
+NUXT_TELEGRAM_BOT_TOKEN=TOKEN FROM @BotFather (Encrypted value)
+NUXT_WEBHOOK_SECRET=RANDOM STRING (Encrypted value)
+NUXT_ID_SALT=RANDOM STRING (Encrypted value)
+NUXT_PUBLIC_BASE_URL=CLOUDFLARE PAGES URL | CUSTOM DOMAIN
+NUXT_PUBLIC_SUPPORT_LINK= (optional) LINK TO SUPPORT GROUP
+NUXT_PUBLIC_SHOW_INFO_BOT= (optional) SHOW INFO BOT
+NUXT_HUB_PROJECT_KEY=NUXT HUB PROJECT KEY (Automatically generated)
+
+## Development Server
+
+Clone the repository and install dependencies:
 
 ```bash
+git clone https://github.com/tvd1981/send2ko.git
+cd send2ko
 pnpm install
 ```
 
-You can update the main text displayed by creating a `.env`:
-
-```bash
-NUXT_PUBLIC_HELLO_TEXT="Hello my world!"
-```
-
-## Development Server
+Copy .env.example to .env and replace the values with your own
 
 Start the development server on `http://localhost:3000`:
 

@@ -93,7 +93,14 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB in bytes
 
 bot.on('message:document', async (ctx) => {
   const doc = ctx.message.document
-  // const userId = ctx.message.fwd_from ?
+  
+  // Kiểm tra xem message có phải là forward không
+  const isForwarded = Boolean((ctx.message as any).forward_from || (ctx.message as any).forward_from_chat)
+  if (isForwarded) {
+    await ctx.reply('❌ Sorry, this bot does not support forwarded messages.')
+    return
+  }
+
   if (!SUPPORTED_MIMES.includes(doc.mime_type || '')) {
     await ctx.reply(
       '❌ The bot only supports the following formats:\n'
