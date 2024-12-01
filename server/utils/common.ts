@@ -91,6 +91,17 @@ async function getEpubMetadata(buffer: Buffer) {
       }
     }
 
+    // Xử lý title từ nhiều nguồn khác nhau
+    let title = null
+    if (metadata?.['dc:title']) {
+      if (typeof metadata['dc:title'] === 'object') {
+        title = metadata['dc:title']._text || metadata['dc:title']['#text']
+      }
+      else {
+        title = metadata['dc:title']
+      }
+    }
+
     // Xử lý author từ nhiều nguồn khác nhau
     let author = null
 
@@ -147,7 +158,7 @@ async function getEpubMetadata(buffer: Buffer) {
     // });
 
     return {
-      title: metadata?.['dc:title'] || null,
+      title: title,
       author: author,
       cover: coverBase64,
     }
@@ -213,9 +224,11 @@ export async function saveEbookInfo(documentId: string, mimeType: string, docume
       cover?: string
     } | null
 
-    console.log('metadata', metadata)
+    // console.log('metadata', metadata)
     // Tạo contentKey
     if (metadata?.title && metadata?.author) {
+      // console.log('metadata.title', metadata.title)
+      // console.log('metadata.author', metadata.author)
       const normalizedTitle = convertViToEn(metadata?.title).toLowerCase()
       const normalizedAuthor = convertViToEn(metadata?.author).toLowerCase()
       const contentKey = `${normalizedTitle}-${normalizedAuthor}`
