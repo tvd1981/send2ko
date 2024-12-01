@@ -5,18 +5,13 @@ export default defineNuxtConfig({
 
   // https://devtools.nuxt.com
   devtools: { enabled: true },
-  vue: {
-    compilerOptions: {
-      isCustomElement: tag => ['modal-settings'].includes(tag),
-    },
-
-  },
   // Env variables - https://nuxt.com/docs/getting-started/configuration#environment-variables-and-private-tokens
   runtimeConfig: {
     telegramBotToken: process.env.NUXT_TELEGRAM_BOT_TOKEN,
     webhookSecret: process.env.NUXT_WEBHOOK_SECRET,
     public: {
       baseUrl: process.env.NUXT_PUBLIC_BASE_URL,
+      showInfoBot: process.env.NUXT_PUBLIC_SHOW_INFO_BOT,
       supportLink: process.env.NUXT_PUBLIC_SUPPORT_LINK,
     },
   },
