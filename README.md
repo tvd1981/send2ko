@@ -3,7 +3,7 @@
 ## Setup
 
 Go to [NuxtHub](https://hub.nuxt.com) and create a new project, import this repository and add the following environment variables:
-```
+```bash
 NUXT_TELEGRAM_BOT_TOKEN=TOKEN FROM @BotFather (Encrypted value)
 NUXT_WEBHOOK_SECRET=RANDOM STRING (Encrypted value)
 NUXT_ID_SALT=RANDOM STRING (Encrypted value)
@@ -11,6 +11,7 @@ NUXT_PUBLIC_BASE_URL=CLOUDFLARE PAGES URL | CUSTOM DOMAIN
 NUXT_PUBLIC_SUPPORT_LINK= (optional) LINK TO SUPPORT GROUP
 NUXT_PUBLIC_SHOW_INFO_BOT= (optional) SHOW INFO BOT
 NUXT_HUB_PROJECT_KEY=NUXT HUB PROJECT KEY (Automatically generated)
+```
 
 ## Development Server
 
