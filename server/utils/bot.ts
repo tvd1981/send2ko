@@ -135,7 +135,7 @@ bot.on('message:document', async (ctx) => {
   }
   catch (error) {
     console.error('Error saving file:', error)
-    await ctx.reply('❌ Sorry, something went wrong. Please try again!')
+    // await ctx.reply('❌ Sorry, something went wrong. Please try again!')
   }
 })
 

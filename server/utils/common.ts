@@ -256,6 +256,11 @@ export type ResultFilesQuery = {
   totalRows: number
 }
 
+interface UserSettings {
+  web: number
+  opds: number
+}
+
 export async function getFilesByUser(
   pk: string,
   options?: {
@@ -265,71 +270,94 @@ export async function getFilesByUser(
   },
   fromDevice?: string,
 ): Promise<ResultFilesQuery> {
-  if (!pk) {
-    throw createError({
-      statusCode: 400,
-      message: 'Missing pk parameter',
-    })
-  }
-  const db = useDrizzle()
-  const user = await db.query.tlgUsers.findFirst({
-    where: eq(tables.tlgUsers.id2, pk),
-  })
-  if (!user) {
-    throw createError({
-      statusCode: 400,
-      message: 'Invalid pk',
-    })
-  }
-  let totalRows = 0
-
-  const query = db.select({
-    id: tables.tlgFiles.id,
-    fileName: tables.tlgFiles.name,
-    size: tables.tlgFiles.size,
-    mimeType: tables.tlgFiles.mimeType,
-    ebookId: tables.tlgFiles.ebookId,
-    ebookTitle: tables.tlgEbooks.title,
-    ebookAuthor: tables.tlgEbooks.author,
-    ebookCover: tables.tlgEbooks.cover,
-    createdAt: tables.tlgFiles.createdAt,
-  })
-    .from(tables.tlgFiles)
-    .leftJoin(tables.tlgEbooks, eq(tables.tlgFiles.ebookId, tables.tlgEbooks.id))
-    .where(eq(tables.tlgFiles.userId, user.id))
-    .orderBy(desc(tables.tlgFiles.createdAt))
-
-  if (!fromDevice) {
-    totalRows = (await db.select({ count: sql<number>`count(*)` }).from(tables.tlgFiles).where(eq(tables.tlgFiles.userId, user.id)))[0].count
-  }
-  else {
-    const { settings = {} } = user as { settings?: { web?: number, opds?: number } }
-    if (fromDevice === 'web') {
-      query.limit(settings.web ?? 20)
+  try{
+    if (!pk) {
+      throw createError({
+        statusCode: 400,
+        message: 'Missing pk parameter',
+      })
     }
-    else if (fromDevice === 'opds') {
-      query.limit(settings.opds ?? 20)
+    const db = useDrizzle()
+    const user = await db.query.tlgUsers.findFirst({
+      where: eq(tables.tlgUsers.id2, pk),
+    })
+    if (!user) {
+      throw createError({
+        statusCode: 400,
+        message: 'Invalid pk',
+      })
     }
-  }
+    let totalRows = 0
+  
+    const query = db.select({
+      id: tables.tlgFiles.id,
+      fileName: tables.tlgFiles.name,
+      size: tables.tlgFiles.size,
+      mimeType: tables.tlgFiles.mimeType,
+      ebookId: tables.tlgFiles.ebookId,
+      ebookTitle: tables.tlgEbooks.title,
+      ebookAuthor: tables.tlgEbooks.author,
+      ebookCover: tables.tlgEbooks.cover,
+      createdAt: tables.tlgFiles.createdAt,
+    })
+      .from(tables.tlgFiles)
+      .leftJoin(tables.tlgEbooks, eq(tables.tlgFiles.ebookId, tables.tlgEbooks.id))
+      .where(eq(tables.tlgFiles.userId, user.id))
+      .orderBy(desc(tables.tlgFiles.createdAt))
+  
+    if (!fromDevice) {
+      totalRows = (await db.select({ count: sql<number>`count(*)` }).from(tables.tlgFiles).where(eq(tables.tlgFiles.userId, user.id)))[0].count
+    }
+    else {
+      let userSettings: UserSettings = {
+        web: 0,
+        opds: 0
+      }
+      try {
+        // Handle case where settings might be a string
+        if (typeof user.settings === 'string') {
+          userSettings = JSON.parse(user.settings)
+        } else {
+          userSettings = user.settings as UserSettings
+        }
+      } catch (e) {
+        console.error('Error parsing user settings:', e)
+        userSettings = { web: 20, opds: 20 } // Use default values if parsing fails
+      }
 
-  // Nếu có options thì áp dụng phân trang hoặc lấy mới nhất
-  if (options) {
-    if (options.latestOnly) {
+      if (fromDevice === 'web') {
+        query.limit(userSettings.web ?? 20)
+      }
+      else if (fromDevice === 'opds') {
+        query.limit(userSettings.opds ?? 20)
+      }
+    }
+  
+    // Nếu có options thì áp dụng phân trang hoặc lấy mới nhất
+    if (options) {
+      if (options.latestOnly) {
+        return {
+          data: await query.limit(1),
+          totalRows: totalRows,
+        }
+      }
+  
+      const offset = (options.page - 1) * options.limit
       return {
-        data: await query.limit(1),
+        data: await query.limit(options.limit).offset(offset),
         totalRows: totalRows,
       }
     }
-
-    const offset = (options.page - 1) * options.limit
+  
     return {
-      data: await query.limit(options.limit).offset(offset),
-      totalRows: totalRows,
+      data: await query,
+      totalRows,
     }
-  }
-
-  return {
-    data: await query,
-    totalRows,
+  }catch (error) {
+    console.error('Error fetching ebooks:', error)
+    throw createError({
+      statusCode: 500,
+      message: 'Internal server error',
+    })
   }
 }
