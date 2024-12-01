@@ -36,6 +36,16 @@ If successful, you will see a message like this:
 }
 ```
 
+## Usage
+
+On koreader: Home > Menu > Search > OPDS > Add new OPDS
+    Name : Your OPDS Name
+    URL : https://yourproject.pages.dev/api/ebooks/opds?pk=YOUR_ID
+
+On Kobo: Web browser : https://yourproject.pages.dev/web?pk=YOUR_ID
+
+YOUR_ID is telegram bot generated ID
+
 ## Development
 
 Clone the repository and install dependencies:
