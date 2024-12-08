@@ -419,13 +419,7 @@ export async function summaryYoutubeVideo(url: string, ctx?: Context, msgStatus?
           coverBuffer = Buffer.from(await response.arrayBuffer())
           console.log('Thumbnail fetched, size:', coverBuffer.length);
         }
-        if(ctx && msgStatus) {
-          await ctx.api.editMessageText(
-            msgStatus.chat.id,
-            msgStatus.message_id,
-            'Creating EPUB...'
-          )
-        }
+        
         // Generate and send epub
         const generator = new EpubGenerator({
           title: data.title,
@@ -449,8 +443,21 @@ export async function summaryYoutubeVideo(url: string, ctx?: Context, msgStatus?
           title: 'Nội dung',
           content: summary,
         })
-
+        if(ctx && msgStatus) {
+          await ctx.api.editMessageText(
+            msgStatus.chat.id,
+            msgStatus.message_id,
+            'Creating EPUB...'
+          )
+        }
         const epubBuffer = await generator.generate()
+        if(ctx && msgStatus) {
+          await ctx.api.editMessageText(
+            msgStatus.chat.id,
+            msgStatus.message_id,
+            'Done creating EPUB...'
+          )
+        }
         return {
           title: data.title,
           epubBuffer
