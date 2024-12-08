@@ -9,6 +9,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     telegramBotToken: process.env.NUXT_TELEGRAM_BOT_TOKEN,
     webhookSecret: process.env.NUXT_WEBHOOK_SECRET,
+    openaiApiKey: process.env.NUXT_OPENAI_API_KEY,
+    adminId: process.env.NUXT_ADMIN_ID,
     public: {
       baseUrl: process.env.NUXT_PUBLIC_BASE_URL,
       showInfoBot: process.env.NUXT_PUBLIC_SHOW_INFO_BOT,

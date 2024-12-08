@@ -5,7 +5,7 @@ import { unzip } from 'fflate'
 import { tlgEbooks } from '../database/schema'
 import { bot } from './bot'
 import { useRuntimeConfig } from '#imports'
-
+import { createOpenAI } from '@ai-sdk/openai'
 const config = useRuntimeConfig()
 export const hashids = new Hashids(config.idSalt)
 
@@ -373,4 +373,10 @@ export async function getFilesByUser(
       message: 'Internal server error',
     })
   }
+}
+
+export function extractURLFromText(text: string): string | null {
+  const regex = /https?:\/\/[^\s]+/g
+  const match = text.match(regex)
+  return match ? match[0] : null
 }

@@ -1,8 +1,11 @@
-import { Bot, webhookCallback, InlineKeyboard } from 'grammy'
+import { Bot, webhookCallback, InlineKeyboard, InputFile } from 'grammy'
 import type { User } from 'grammy/types'
 import type { Context } from 'grammy'
-import { hashids, getFileName, saveEbookInfo } from './common'
+import { hashids, getFileName, saveEbookInfo, extractURLFromText } from './common'
+import { extractYouTubeID, fetchTranscript } from './fetch-transcript'
+import { summaryContent } from './openai'
 import { useRuntimeConfig } from '#imports'
+import { EpubGenerator } from './epub-generator' // Import EpubGenerator
 
 const config = useRuntimeConfig()
 
@@ -58,14 +61,74 @@ async function handleCommonResponse(ctx: Context) {
   const response = await handleUserResponse(userId!.toString())
   await ctx.reply(response.text, response.keyboard
     ? {
-        reply_markup: response.keyboard,
-      }
+      reply_markup: response.keyboard,
+    }
     : undefined)
 }
 
 // Command handlers
 bot.command('start', async (ctx) => {
   await handleCommonResponse(ctx)
+})
+
+bot.on('message::url', async (ctx) => {
+  const url = extractURLFromText(ctx.message.text || '')
+  if (url) {
+    const videoId = extractYouTubeID(url)
+    if (videoId) {
+      try {
+        const data = await fetchTranscript(url)
+        const summary = await summaryContent(data.fullTranscript, url)
+        await ctx.reply(summary)
+
+        // Fetch thumbnail image
+        let coverBuffer: Buffer | undefined
+        if (data.thumbnail) {
+          const response = await fetch(data.thumbnail)
+          coverBuffer = Buffer.from(await response.arrayBuffer())
+        }
+
+        // Generate and send epub
+        const generator = new EpubGenerator({
+          title: data.title,
+          author: data.author || 'Unknown',
+          language: 'en',
+          identifier: videoId,
+          description: data.shortDescription,
+          ...(coverBuffer && {
+            cover: {
+              id: 'cover',
+              data: coverBuffer,
+              mimeType: 'image/jpeg'
+            }
+          })
+        })
+
+        generator.addChapter({
+          id:`noi-dung-${Date.now()}`,
+          title: 'Nội dung',
+          content: summary,
+        })
+        const epubBuffer = await generator.generate()
+        const doc = await ctx.replyWithDocument(new InputFile(epubBuffer, `${data.title}.epub`))
+
+        const db = useDrizzle()
+        await db.insert(tables.tlgFiles).values({
+          id: doc.document.file_id,
+          userId: ctx.from.id,
+          name: `${data.title}.epub`,
+          mimeType: 'application/epub+zip',
+          size: doc.document.file_size,
+          createdAt: new Date(),
+        })
+        await ctx.reply('✅ Successfully added to your list!')
+      }
+      catch (error) {
+        console.error('Error:', error)
+        await ctx.reply('❌ Sorry, something went wrong. Please try again!')
+      }
+    }
+  }
 })
 
 bot.on('message:text', async (ctx) => {
@@ -93,7 +156,7 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB in bytes
 
 bot.on('message:document', async (ctx) => {
   const doc = ctx.message.document
-  
+
   // Kiểm tra xem message có phải là forward không
   const isForwarded = Boolean((ctx.message as any).forward_from || (ctx.message as any).forward_from_chat)
   if (isForwarded) {

@@ -1,36 +1,41 @@
-import { saveEbookInfo } from '../../utils/common'
-
+// import { saveEbookInfo } from '../../utils/common'
+import { fetchTranscript } from '../../utils/fetch-transcript'
+import { summaryContent } from '../../utils/openai'
 export default defineEventHandler(async (event) => {
   try {
     const query = getQuery(event)
-    const { id } = query
+    const { url } = query
 
-    if (!id || typeof id !== 'string') {
+    if (!url || typeof url !== 'string') {
       throw createError({
         statusCode: 400,
-        message: 'ID is required and must be a string',
+        message: 'URL is required and must be a string',
       })
     }
 
-    // Giả lập mime type và name cho test
-    const db = useDrizzle()
-    const [file] = await db.select().from(tables.tlgFiles).where(eq(tables.tlgFiles.id, id))
+    const data = await fetchTranscript(url)
+    // const summary = await summaryContent(data.fullTranscript, url)
+    // return { summary }
+    return { data }
+    // // Giả lập mime type và name cho test
+    // const db = useDrizzle()
+    // const [file] = await db.select().from(tables.tlgFiles).where(eq(tables.tlgFiles.id, id))
 
-    if (!file || !file.mimeType || !file.name) {
-      throw createError({
-        statusCode: 400,
-        message: 'File information not found',
-      })
-    }
+    // if (!file || !file.mimeType || !file.name) {
+    //   throw createError({
+    //     statusCode: 400,
+    //     message: 'File information not found',
+    //   })
+    // }
 
-    const ebookId = await saveEbookInfo(id, file.mimeType, file.name)
+    // const ebookId = await saveEbookInfo(id, file.mimeType, file.name)
 
-    return {
-      success: true,
-      data: {
-        ebookId,
-      },
-    }
+    // return {
+    //   success: true,
+    //   data: {
+    //     ebookId,
+    //   },
+    // }
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   catch (error: any) {
