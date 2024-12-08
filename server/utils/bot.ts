@@ -58,7 +58,7 @@ async function handleCommonResponse(ctx: Context) {
   const url = extractURLFromText(ctx?.message?.text || '')
   if (url) {
     const statusMsg = await ctx.reply('Processing...')
-    const rs = await summaryYoutubeVideo(url)
+    const rs = await summaryYoutubeVideo(url, ctx, statusMsg)
     if (rs) {
       try {
         await ctx.api.editMessageText(
