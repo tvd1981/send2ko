@@ -1,4 +1,4 @@
-import { strToU8, zip } from 'fflate';
+import { strToU8, zip, zipSync } from 'fflate';
 import { XMLBuilder } from 'fast-xml-parser';
 
 interface EpubChapter {
@@ -175,16 +175,11 @@ export class EpubGenerator {
             processedFiles[path] = data instanceof Buffer ? new Uint8Array(data) : data;
           }
 
-          zip(processedFiles, {
+          // Use synchronous zipSync instead of async zip
+          const zipped = zipSync(processedFiles, {
             level: 6  // compression level
-          }, (err, data) => {
-            if (err) {
-              console.error('Zip error:', err);
-              reject(err);
-            } else {
-              resolve(data);
-            }
           });
+          resolve(zipped);
         } catch (error) {
           console.error('Error in zip process:', error);
           reject(error);
