@@ -443,25 +443,43 @@ export async function summaryYoutubeVideo(url: string, ctx?: Context, msgStatus?
           title: 'Nội dung',
           content: summary,
         })
-        if(ctx && msgStatus) {
-          await ctx.api.editMessageText(
-            msgStatus.chat.id,
-            msgStatus.message_id,
-            'Creating EPUB...'
-          )
+        try {
+          if(ctx && msgStatus) {
+            await ctx.api.editMessageText(
+              msgStatus.chat.id,
+              msgStatus.message_id,
+              'Creating EPUB...'
+            )
+          }
+          console.log('Starting EPUB generation...');
+          const epubBuffer = await generator.generate()
+          console.log('EPUB generation completed');
+          
+          if(ctx && msgStatus) {
+            await ctx.api.editMessageText(
+              msgStatus.chat.id,
+              msgStatus.message_id,
+              'Done creating EPUB...'
+            )
+          }
+          return {
+            title: data.title,
+            epubBuffer
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? 
+            `Error: ${error.message}\nStack: ${error.stack}` : 
+            'Unknown error during EPUB generation';
+
+          if(ctx && msgStatus) {
+            await ctx.api.editMessageText(
+              msgStatus.chat.id,
+              msgStatus.message_id,
+              `❌ Error creating EPUB:\n${errorMessage.slice(0, 1000)}` // Telegram có giới hạn độ dài message
+            )
+          }
+          throw error;
         }
-        const epubBuffer = await generator.generate()
-        if(ctx && msgStatus) {
-          await ctx.api.editMessageText(
-            msgStatus.chat.id,
-            msgStatus.message_id,
-            'Done creating EPUB...'
-          )
-        }
-        return {
-          title: data.title,
-          epubBuffer
-        } 
       }
       catch (error) {
         console.error('Error:', error)
