@@ -58,21 +58,7 @@ async function handleUserResponse(userId: string) {
 async function handleCommonResponse(ctx: Context) {
   const userId = ctx.message?.from.id
   await upsertTelegramUser(ctx.message?.from)
-  const response = await handleUserResponse(userId!.toString())
-  await ctx.reply(response.text, response.keyboard
-    ? {
-      reply_markup: response.keyboard,
-    }
-    : undefined)
-}
-
-// Command handlers
-bot.command('start', async (ctx) => {
-  await handleCommonResponse(ctx)
-})
-
-bot.on('message::url', async (ctx) => {
-  const url = extractURLFromText(ctx.message.text || '')
+  const url = extractURLFromText(ctx?.message?.text || '')
   if (url) {
     const videoId = extractYouTubeID(url)
     if (videoId) {
@@ -115,7 +101,7 @@ bot.on('message::url', async (ctx) => {
         const db = useDrizzle()
         await db.insert(tables.tlgFiles).values({
           id: doc.document.file_id,
-          userId: ctx.from.id,
+          userId: ctx?.from?.id,
           name: `${data.title}.epub`,
           mimeType: 'application/epub+zip',
           size: doc.document.file_size,
@@ -129,7 +115,78 @@ bot.on('message::url', async (ctx) => {
       }
     }
   }
+  const response = await handleUserResponse(userId!.toString())
+  await ctx.reply(response.text, response.keyboard
+    ? {
+      reply_markup: response.keyboard,
+    }
+    : undefined)
+}
+
+// Command handlers
+bot.command('start', async (ctx) => {
+  await handleCommonResponse(ctx)
 })
+
+// bot.on('message::url', async (ctx) => {
+//   const url = extractURLFromText(ctx.message.text || '')
+//   if (url) {
+//     const videoId = extractYouTubeID(url)
+//     if (videoId) {
+//       try {
+//         const data = await fetchTranscript(url)
+//         const summary = await summaryContent(data.fullTranscript, url)
+//         await ctx.reply(summary)
+
+//         // Fetch thumbnail image
+//         let coverBuffer: Buffer | undefined
+//         if (data.thumbnail) {
+//           const response = await fetch(data.thumbnail)
+//           coverBuffer = Buffer.from(await response.arrayBuffer())
+//         }
+
+//         // Generate and send epub
+//         const generator = new EpubGenerator({
+//           title: data.title,
+//           author: data.author || 'Unknown',
+//           language: 'en',
+//           identifier: videoId,
+//           description: data.shortDescription,
+//           ...(coverBuffer && {
+//             cover: {
+//               id: 'cover',
+//               data: coverBuffer,
+//               mimeType: 'image/jpeg'
+//             }
+//           })
+//         })
+
+//         generator.addChapter({
+//           id:`noi-dung-${Date.now()}`,
+//           title: 'Nội dung',
+//           content: summary,
+//         })
+//         const epubBuffer = await generator.generate()
+//         const doc = await ctx.replyWithDocument(new InputFile(epubBuffer, `${data.title}.epub`))
+
+//         const db = useDrizzle()
+//         await db.insert(tables.tlgFiles).values({
+//           id: doc.document.file_id,
+//           userId: ctx.from.id,
+//           name: `${data.title}.epub`,
+//           mimeType: 'application/epub+zip',
+//           size: doc.document.file_size,
+//           createdAt: new Date(),
+//         })
+//         await ctx.reply('✅ Successfully added to your list!')
+//       }
+//       catch (error) {
+//         console.error('Error:', error)
+//         await ctx.reply('❌ Sorry, something went wrong. Please try again!')
+//       }
+//     }
+//   }
+// })
 
 bot.on('message:text', async (ctx) => {
   await handleCommonResponse(ctx)
