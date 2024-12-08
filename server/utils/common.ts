@@ -8,6 +8,8 @@ import { useRuntimeConfig } from '#imports'
 import { EpubGenerator } from './epub-generator'
 import { extractYouTubeID, fetchTranscript } from './fetch-transcript'
 import { summaryContent } from './openai'
+import { Context } from 'grammy'
+import type { Message } from 'grammy/types'
 const config = useRuntimeConfig()
 export const hashids = new Hashids(config.idSalt)
 
@@ -383,11 +385,25 @@ export function extractURLFromText(text: string): string | null {
   return match ? match[0] : null
 }
 
-export async function summaryYoutubeVideo(url: string) {
+export async function summaryYoutubeVideo(url: string, ctx?: Context, msgStatus?: Message) {
   const videoId = extractYouTubeID(url)
     if (videoId) {
       try {
+        if(ctx && msgStatus) {
+          await ctx.api.editMessageText(
+            msgStatus.chat.id,
+            msgStatus.message_id,
+            'Fetching transcript...'
+          )
+        }
         const data = await fetchTranscript(url)
+        if(ctx && msgStatus) {
+          await ctx.api.editMessageText(
+            msgStatus.chat.id,
+            msgStatus.message_id,
+            'Summarizing transcript...'
+          )
+        }
         const summary = await summaryContent(data.fullTranscript, url)
         // await ctx.reply(summary)
 
@@ -402,6 +418,13 @@ export async function summaryYoutubeVideo(url: string) {
           }
           coverBuffer = Buffer.from(await response.arrayBuffer())
           console.log('Thumbnail fetched, size:', coverBuffer.length);
+        }
+        if(ctx && msgStatus) {
+          await ctx.api.editMessageText(
+            msgStatus.chat.id,
+            msgStatus.message_id,
+            'Creating EPUB...'
+          )
         }
         // Generate and send epub
         const generator = new EpubGenerator({
