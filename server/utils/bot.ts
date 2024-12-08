@@ -91,7 +91,7 @@ async function handleCommonResponse(ctx: Context) {
         })
 
         generator.addChapter({
-          id:`noi-dung-${Date.now()}`,
+          id: `noi-dung-${Date.now()}`,
           title: 'Nội dung',
           content: summary,
         })
@@ -115,12 +115,14 @@ async function handleCommonResponse(ctx: Context) {
       }
     }
   }
-  const response = await handleUserResponse(userId!.toString())
-  await ctx.reply(response.text, response.keyboard
-    ? {
-      reply_markup: response.keyboard,
-    }
-    : undefined)
+  else {
+    const response = await handleUserResponse(userId!.toString())
+    await ctx.reply(response.text, response.keyboard
+      ? {
+        reply_markup: response.keyboard,
+      }
+      : undefined)
+  }
 }
 
 // Command handlers
