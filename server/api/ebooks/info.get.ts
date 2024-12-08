@@ -1,6 +1,7 @@
 // import { saveEbookInfo } from '../../utils/common'
-import { fetchTranscript } from '../../utils/fetch-transcript'
-import { summaryContent } from '../../utils/openai'
+import { summaryYoutubeVideo } from '../../utils/common'
+// import { fetchTranscript } from '../../utils/fetch-transcript'
+// import { summaryContent } from '../../utils/openai'
 export default defineEventHandler(async (event) => {
   try {
     const query = getQuery(event)
@@ -13,10 +14,10 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const data = await fetchTranscript(url)
+    const data = await summaryYoutubeVideo(url)
     // const summary = await summaryContent(data.fullTranscript, url)
     // return { summary }
-    return { data }
+    return { title: data?.title }
     // // Giả lập mime type và name cho test
     // const db = useDrizzle()
     // const [file] = await db.select().from(tables.tlgFiles).where(eq(tables.tlgFiles.id, id))

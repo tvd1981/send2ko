@@ -5,7 +5,9 @@ import { unzip } from 'fflate'
 import { tlgEbooks } from '../database/schema'
 import { bot } from './bot'
 import { useRuntimeConfig } from '#imports'
-import { createOpenAI } from '@ai-sdk/openai'
+import { EpubGenerator } from './epub-generator'
+import { extractYouTubeID, fetchTranscript } from './fetch-transcript'
+import { summaryContent } from './openai'
 const config = useRuntimeConfig()
 export const hashids = new Hashids(config.idSalt)
 
@@ -379,4 +381,64 @@ export function extractURLFromText(text: string): string | null {
   const regex = /https?:\/\/[^\s]+/g
   const match = text.match(regex)
   return match ? match[0] : null
+}
+
+export async function summaryYoutubeVideo(url: string) {
+  const videoId = extractYouTubeID(url)
+    if (videoId) {
+      try {
+        const data = await fetchTranscript(url)
+        const summary = await summaryContent(data.fullTranscript, url)
+        // await ctx.reply(summary)
+
+        // Fetch thumbnail image
+        let coverBuffer: Buffer | undefined
+        if (data.thumbnail) {
+          console.log('Fetching thumbnail:', data.thumbnail);
+          const response = await fetch(data.thumbnail)
+          if (!response.ok) {
+            console.error('Failed to fetch thumbnail:', response.status, response.statusText);
+            throw new Error('Failed to fetch thumbnail');
+          }
+          coverBuffer = Buffer.from(await response.arrayBuffer())
+          console.log('Thumbnail fetched, size:', coverBuffer.length);
+        }
+        // Generate and send epub
+        const generator = new EpubGenerator({
+          title: data.title,
+          author: data.author || 'Unknown',
+          language: 'en',
+          identifier: videoId,
+          description: data.shortDescription,
+          ...(coverBuffer && {
+            cover: {
+              id: 'cover',
+              data: coverBuffer,
+              mimeType: 'image/jpeg'
+            }
+          })
+        })
+
+        // console.log('summary', new Date().toISOString())
+
+        generator.addChapter({
+          id: `noi-dung-${Date.now()}`,
+          title: 'Nội dung',
+          content: summary,
+        })
+
+        const epubBuffer = await generator.generate()
+        return {
+          title: data.title,
+          epubBuffer
+        } 
+      }
+      catch (error) {
+        console.error('Error:', error)
+        throw createError({
+          statusCode: 500,
+          message: 'Internal server error',
+        })
+      }
+    }
 }

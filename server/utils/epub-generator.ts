@@ -65,9 +65,15 @@ export class EpubGenerator {
     ];
 
     if (this.metadata.cover) {
+      const coverExt = this.metadata.cover.mimeType.split('/')[1];
+      console.log('Cover metadata:', {
+        id: this.metadata.cover.id,
+        mimeType: this.metadata.cover.mimeType,
+        dataLength: this.metadata.cover.data?.length
+      });
       manifest.push({
         "@_id": this.metadata.cover.id,
-        "@_href": `images/${this.metadata.cover.id}`,
+        "@_href": `images/${this.metadata.cover.id}.${coverExt}`,
         "@_media-type": this.metadata.cover.mimeType
       });
     }
@@ -93,6 +99,7 @@ export class EpubGenerator {
       }
     };
 
+    console.log('Generated content.opf:', JSON.stringify(content, null, 2));
     return this.xmlBuilder.build(content);
   }
 
@@ -134,28 +141,58 @@ export class EpubGenerator {
   }
 
   async generate(): Promise<Uint8Array> {
-    const files: Record<string, Uint8Array> = {
-      'mimetype': strToU8('application/epub+zip'),
-      'META-INF/container.xml': strToU8(this.generateContainerXml()),
-      'OEBPS/content.opf': strToU8(this.generateContentOpf()),
-      'OEBPS/toc.ncx': strToU8(this.generateTocNcx()),
-    };
+    try {
+      const files: Record<string, Uint8Array> = {
+        'mimetype': strToU8('application/epub+zip'),
+        'META-INF/container.xml': strToU8(this.generateContainerXml()),
+        'OEBPS/content.opf': strToU8(this.generateContentOpf()),
+        'OEBPS/toc.ncx': strToU8(this.generateTocNcx()),
+      };
+      // console.log('add chapter', new Date().toISOString())
+      // Add chapters
+      for (const chapter of this.chapters) {
+        files[`OEBPS/${chapter.id}.xhtml`] = strToU8(this.generateChapterXhtml(chapter));
+      }
+      // Add cover if exists
+      if (this.metadata.cover) {
+        const coverExt = this.metadata.cover.mimeType.split('/')[1]; // Get extension from mime type
+        files[`OEBPS/images/${this.metadata.cover.id}.${coverExt}`] = this.metadata.cover.data;
+      }
+      // console.log('zip', new Date().toISOString())
+      // // Debug logging
+      // Object.entries(files).forEach(([path, data]) => {
+      //   console.log('File path:', path);
+      //   console.log('Data type:', data ? data.constructor.name : 'undefined');
+      //   console.log('Data length:', data ? data.length : 'N/A');
+      //   console.log('---');
+      // });
 
-    // Add chapters
-    for (const chapter of this.chapters) {
-      files[`OEBPS/${chapter.id}.xhtml`] = strToU8(this.generateChapterXhtml(chapter));
-    }
+      return new Promise<Uint8Array>((resolve, reject) => {
+        try {
+          // Convert Buffer to Uint8Array if needed
+          const processedFiles: Record<string, Uint8Array> = {};
+          for (const [path, data] of Object.entries(files)) {
+            processedFiles[path] = data instanceof Buffer ? new Uint8Array(data) : data;
+          }
 
-    // Add cover if exists
-    if (this.metadata.cover) {
-      files[`OEBPS/images/${this.metadata.cover.id}`] = this.metadata.cover.data;
-    }
-
-    return new Promise((resolve, reject) => {
-      zip(files, (err, data) => {
-        if (err) reject(err);
-        else resolve(data);
+          zip(processedFiles, {
+            level: 6  // compression level
+          }, (err, data) => {
+            if (err) {
+              console.error('Zip error:', err);
+              reject(err);
+            } else {
+              resolve(data);
+            }
+          });
+        } catch (error) {
+          console.error('Error in zip process:', error);
+          reject(error);
+        }
       });
-    });
+    } catch (error) {
+      console.error('Error generating ePub:', error);
+      throw error; 
+    }
   }
 }
