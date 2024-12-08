@@ -21,6 +21,7 @@
     "ai": "^4.0.13",
     "common-tags": "^1.8.2",
     "drizzle-orm": "^0.36.4",
+    "epub-gen-memory": "^1.1.2",
     "fast-xml-parser": "^4.5.0",
     "fflate": "^0.8.2",
     "grammy": "^1.32.0",
