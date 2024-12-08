@@ -57,11 +57,17 @@ async function handleCommonResponse(ctx: Context) {
   await upsertTelegramUser(ctx.message?.from)
   const url = extractURLFromText(ctx?.message?.text || '')
   if (url) {
+    const statusMsg = await ctx.reply('Processing...')
     const rs = await summaryYoutubeVideo(url)
     if (rs) {
       try {
+        await ctx.api.editMessageText(
+          statusMsg.chat.id,
+          statusMsg.message_id,
+          'Uploading EPUB...'
+        )
         const doc = await ctx.replyWithDocument(new InputFile(rs.epubBuffer, `${rs.title}.epub`))
-        await ctx.reply(`uploaded ${rs.title}.epub`)  
+        
         const db = useDrizzle()
         await db.insert(tables.tlgFiles).values({
           id: doc.document.file_id,
@@ -71,7 +77,13 @@ async function handleCommonResponse(ctx: Context) {
           size: doc.document.file_size,
           createdAt: new Date(),
         })
-        await ctx.reply('✅ Successfully added to your list!')
+
+        // Edit the status message instead of sending a new one
+        await ctx.api.editMessageText(
+          statusMsg.chat.id,
+          statusMsg.message_id,
+          `✅ Successfully uploaded "${rs.title}.epub" and added to your list!`
+        )
       }
       catch (error) {
         console.error('Error in upload epub:', error)
