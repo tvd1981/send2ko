@@ -2,9 +2,12 @@ import { Bot, webhookCallback, InlineKeyboard, InputFile } from 'grammy'
 import type { User } from 'grammy/types'
 import type { Context } from 'grammy'
 import { hashids, getFileName, saveEbookInfo, extractURLFromText, summaryYoutubeVideo } from './common'
+import type { YouTubeEpubResult } from './common'
 import { useRuntimeConfig } from '#imports'
 
 const config = useRuntimeConfig()
+
+const processingMessages = new Set<string>();
 
 export const bot = new Bot(config.telegramBotToken)
 
@@ -57,38 +60,77 @@ async function handleCommonResponse(ctx: Context) {
   await upsertTelegramUser(ctx.message?.from)
   const url = extractURLFromText(ctx?.message?.text || '')
   if (url) {
-    const statusMsg = await ctx.reply('Processing...')
-    const rs = await summaryYoutubeVideo(url, ctx, statusMsg)
-    if (rs) {
-      try {
-        await ctx.api.editMessageText(
-          statusMsg.chat.id,
-          statusMsg.message_id,
-          'Uploading EPUB...'
-        )
-        const doc = await ctx.replyWithDocument(new InputFile(rs.epubBuffer, `${rs.title}.epub`))
-        
-        const db = useDrizzle()
-        await db.insert(tables.tlgFiles).values({
-          id: doc.document.file_id,
-          userId: ctx?.from?.id,
-          name: `${rs.title}.epub`,
-          mimeType: 'application/epub+zip',
-          size: doc.document.file_size,
-          createdAt: new Date(),
-        })
+    // Create a unique key for this message
+    const messageKey = `${ctx.chat?.id}-${ctx.message?.message_id}`;
+    
+    // Check if already processing
+    if (processingMessages.has(messageKey)) {
+      return;
+    }
 
-        // Edit the status message instead of sending a new one
-        await ctx.api.editMessageText(
-          statusMsg.chat.id,
-          statusMsg.message_id,
-          `✅ Successfully uploaded "${rs.title}.epub" and added to your list!`
-        )
+    try {
+      // Mark as processing
+      processingMessages.add(messageKey);
+      
+      const statusMsg = await ctx.reply('Processing...')
+      
+      // Add timeout
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Operation timed out')), 300000); // 5 minutes timeout
+      });
+
+      let rs: YouTubeEpubResult | undefined;
+      try {
+        const result = await Promise.race([
+          summaryYoutubeVideo(url, ctx, statusMsg),
+          timeoutPromise
+        ]);
+        
+        // Type guard to check if result has the expected properties
+        rs = result && typeof result === 'object' && 'title' in result && 'epubBuffer' in result 
+          ? result as YouTubeEpubResult 
+          : undefined;
+      } catch (error) {
+        console.error('Error in YouTube video summary:', error);
+        rs = undefined;
       }
-      catch (error) {
-        console.error('Error in upload epub:', error)
-        await ctx.reply('❌ Sorry, something went wrong. Please try again!')
+
+      if (rs) {
+        try {
+          await ctx.api.editMessageText(
+            statusMsg.chat.id,
+            statusMsg.message_id,
+            'Uploading EPUB...'
+          )
+          const doc = await ctx.replyWithDocument(new InputFile(rs.epubBuffer, `${rs.title}.epub`))
+          
+          const db = useDrizzle()
+          await db.insert(tables.tlgFiles).values({
+            id: doc.document.file_id,
+            userId: ctx?.from?.id,
+            name: `${rs.title}.epub`,
+            mimeType: 'application/epub+zip',
+            size: doc.document.file_size,
+            createdAt: new Date(),
+          })
+
+          await ctx.api.editMessageText(
+            statusMsg.chat.id,
+            statusMsg.message_id,
+            `✅ Successfully uploaded "${rs.title}.epub" and added to your list!`
+          )
+        }
+        catch (error) {
+          console.error('Error in upload epub:', error)
+          await ctx.reply('❌ Sorry, something went wrong. Please try again!')
+        }
       }
+    } catch (error) {
+      console.error('Error:', error)
+      await ctx.reply('❌ Operation failed or timed out. Please try again.')
+    } finally {
+      // Remove from processing set when done
+      processingMessages.delete(messageKey);
     }
   }
   else {

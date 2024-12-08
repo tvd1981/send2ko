@@ -385,7 +385,12 @@ export function extractURLFromText(text: string): string | null {
   return match ? match[0] : null
 }
 
-export async function summaryYoutubeVideo(url: string, ctx?: Context, msgStatus?: Message) {
+export interface YouTubeEpubResult {
+  title: string;
+  epubBuffer: Buffer;
+}
+
+export async function summaryYoutubeVideo(url: string, ctx?: Context, msgStatus?: Message): Promise<YouTubeEpubResult | undefined> {
   const videoId = extractYouTubeID(url)
     if (videoId) {
       try {
@@ -452,7 +457,7 @@ export async function summaryYoutubeVideo(url: string, ctx?: Context, msgStatus?
             )
           }
           console.log('Starting EPUB generation...');
-          const epubBuffer = await generator.generate()
+          const epubBuffer = Buffer.from(await generator.generate())
           console.log('EPUB generation completed');
           
           if(ctx && msgStatus) {
