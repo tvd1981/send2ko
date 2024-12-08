@@ -61,7 +61,7 @@ async function handleCommonResponse(ctx: Context) {
     if (rs) {
       try {
         const doc = await ctx.replyWithDocument(new InputFile(rs.epubBuffer, `${rs.title}.epub`))
-
+        await ctx.reply(`uploaded ${rs.title}.epub`)  
         const db = useDrizzle()
         await db.insert(tables.tlgFiles).values({
           id: doc.document.file_id,
