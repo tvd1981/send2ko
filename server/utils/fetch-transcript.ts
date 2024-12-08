@@ -17,14 +17,26 @@ export interface TranscriptData {
 }
 
 export function extractYouTubeID(urlOrID: string): string | null {
-    const regex = /^(https:\/\/)?(?:www\.youtube\.com\/watch\?v=|youtu\.be\/)([^#&]+)/;
-    const match = urlOrID.match(regex);
+    // Regular expressions for different YouTube URL formats
+    const patterns = [
+        /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([^#&?]*).*/,
+        /^(https?:\/\/)?(www\.)?youtube\.com\/shorts\/([^#&?]*).*/
+    ];
 
-    if (match) {
-        return match[1];
-    } else {
-        return null;
+    for (const pattern of patterns) {
+        const match = urlOrID.match(pattern);
+        if (match) {
+            // Return the video ID group (4th group for watch/youtu.be, 3rd for shorts)
+            return match[4] || match[3];
+        }
     }
+
+    // If it's already a video ID (11 characters of allowed chars)
+    if (/^[a-zA-Z0-9_-]{11}$/.test(urlOrID)) {
+        return urlOrID;
+    }
+
+    return null;
 }
 
 export const fetchTranscript = async (youtubeUrl: string): Promise<TranscriptData> => {
@@ -34,6 +46,8 @@ export const fetchTranscript = async (youtubeUrl: string): Promise<TranscriptDat
     if (!videoId) {
         throw new Error('Invalid YouTube URL');
     }
+
+    console.log('Video ID extracted:', videoId);
 
     const { Innertube } = await import('youtubei.js/cf-worker');
 
