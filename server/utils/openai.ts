@@ -17,7 +17,7 @@ export async function summaryContent(content: string, url?: string) {
     const message = `
         Với tư cách là một AI được trainning trên dữ liệu toàn cầu hãy tóm tắt chi tiết nội dung trong mục Content sau đây 
         : <Content>${content}</Content>
-        - Trình bày theo các gạch đầu dòng ý chính và diễn giải.
+        - Trình bày theo các gạch đầu dòng ý chính và diễn giải bằng tiếng Việt Nam.
         - Trả về định dạng HTML nhưng bỏ thẻ bao html đi.
         - Không được trả về định dạng markdown
         - Bỏ dòng giới thiệu dạng : Dưới đây là tóm tắt chi tiết nội dung trong mục Content theo các gạch đầu dòng ý chính và diễn giải...
